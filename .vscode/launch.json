@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Lldb-Creator",
+            "program": "${workspaceFolder}/build/creator.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Lldb-Debug",
+            "program": "${workspaceFolder}/build/test.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        },
+        {
+            "type": "codelldb",
+            "request": "launch",
+            "name": "Codelldb-Creator",
+            "program": "${workspaceFolder}/build/creator.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        },
+        {
+            "type": "codelldb",
+            "request": "launch",
+            "name": "Codelldb-Debug",
+            "program": "${workspaceFolder}/build/test.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        }
+    ]
+}

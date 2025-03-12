@@ -1,0 +1,47 @@
+{
+    "name": "atom-engine",
+    "dependencies": [
+        "assimp",
+        "lunasvg",
+        "freetype",
+        "glfw3",
+        "opengl",
+        "vulkan",
+        {
+            "name": "imgui",
+            "features": [
+                "docking-experimental",
+                "glfw-binding",
+                "opengl3-binding",
+                "vulkan-binding",
+                "freetype"
+            ]
+        },
+        "glad",
+        "glm",
+        "nlohmann-json",
+        "openal-soft",
+        {
+            "name":"bullet3"
+        },
+        "tinyfiledialogs",
+        "lua",
+        "sol2",
+        {
+            "name": "easyloggingpp",
+            "features": [
+                "no-defaultfile",
+                "std-locking",
+                "thread-safe"
+            ]
+        },
+        "efsw"
+    ],
+    "overrides": [
+        {
+            "name": "imgui",
+            "version": "1.91.0"
+        }
+    ],
+    "builtin-baseline": "37d46edf0f2024c3d04997a2d432d59278ca1dff"
+}

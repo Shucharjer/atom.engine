@@ -206,8 +206,34 @@ if (BUILD_ENGINE_DOCS)
     endif()
 endif()
 
+option(ATOM_BUILD_PRECOMPILER OFF)
+
+if (ATOM_BUILD_PRECOMPILER)
+    file(GLOB PRECOMPILER_SRC_FILES
+        ${Engine_SOURCE_DIR}/precompiler/main.cpp
+        ${Engine_SOURCE_DIR}/content/src/systems/render/ShaderProgram.cpp
+        ${Engine_SOURCE_DIR}/content/src/io/file.cpp
+        ${Engine_SOURCE_DIR}/thirdparty/easylogging++.cpp
+    )
+
+    add_executable(precompiler ${PRECOMPILER_SRC_FILES})
+
+    target_include_directories(precompiler PRIVATE
+        $<BUILD_INTERFACE:${Engine_SOURCE_DIR}/precompiler/include>
+    )
+    
+    target_link_libraries(precompiler PRIVATE 
+        Atom::Ecs
+        PkgConfig::easyloggingpp
+        glm::glm
+        glfw
+        glad::glad
+        OpenGL::GL
+    )
+
+endif()
+
 option(ATOM_BUILD_CREATOR OFF)
-set(ATOM_BUILD_CREATOR ON)
 
 if (ATOM_BUILD_CREATOR)
     file(GLOB CREATOR_SRC_FILES
@@ -218,14 +244,13 @@ if (ATOM_BUILD_CREATOR)
     add_executable(creator ${CREATOR_SRC_FILES})
 
     target_include_directories(creator PRIVATE 
-        $<BUILD_INTERFACE:${Engine_SOURCE_DIR}/creator//include>
+        $<BUILD_INTERFACE:${Engine_SOURCE_DIR}/creator/include>
     )
 
     target_link_libraries(creator PRIVATE Atom::Engine)
 endif()
 
 option(BUILD_Engine_TEST OFF)
-set(BUILD_Engine_TEST ON)
 
 if (BUILD_Engine_TEST)
 

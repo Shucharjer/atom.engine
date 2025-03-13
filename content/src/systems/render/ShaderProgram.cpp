@@ -1,7 +1,5 @@
 #include "systems/render/ShaderProgram.hpp"
-#include <pch.hpp>
 //
-#include <csetjmp>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -20,6 +18,7 @@
 #include "io/file.hpp"
 
 using namespace atom;
+using namespace atom::ecs;
 using namespace atom::engine;
 using namespace atom::engine::systems::render;
 using namespace atom::engine::io;

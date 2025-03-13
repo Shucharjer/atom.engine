@@ -5,7 +5,6 @@
 #include <glad/glad.h>
 #include <asset.hpp>
 #include <glm/fwd.hpp>
-#include "pch.hpp"
 
 namespace atom::engine::systems::render {
 
@@ -57,12 +56,16 @@ public:
     ShaderProgram(const std::filesystem::path& vsh, const std::filesystem::path& fsh);
     /**
      * @brief Construct a new Shader Program object.
-     * 
-     * @param precompiled 
-     * @param vsh 
-     * @param fsh 
+     *
+     * @param precompiled
+     * @param vsh
+     * @param fsh
      */
-    ShaderProgram(const std::filesystem::path& precompiled, const std::filesystem::path& vsh, const std::filesystem::path& fsh);
+    ShaderProgram(
+        const std::filesystem::path& precompiled,
+        const std::filesystem::path& vsh,
+        const std::filesystem::path& fsh
+    );
 
     ShaderProgram(const ShaderProgram&)                = delete;
     ShaderProgram& operator=(const ShaderProgram&)     = delete;
@@ -72,7 +75,7 @@ public:
     ~ShaderProgram();
 
     [[nodiscard]] auto path() const noexcept -> std::string_view;
-    [[nodiscard]] constexpr auto type() const noexcept -> asset_type;
+    [[nodiscard]] constexpr auto type() const noexcept -> ecs::asset_type;
 
     void use() const noexcept;
 
@@ -96,4 +99,4 @@ private:
     std::string m_FragPath;
 };
 
-} // namespace resources
+} // namespace atom::engine::systems::render

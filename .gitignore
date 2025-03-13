@@ -1,6 +1,6 @@
 build/**
 .cache/**
 .idea/**
-resources/**
+resources/models/**
 imgui.ini
 myeasylog.log

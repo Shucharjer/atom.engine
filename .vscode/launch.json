@@ -13,7 +13,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Lldb-Debug",
+            "name": "Lldb-Precompiler",
+            "program": "${workspaceFolder}/build/precompiler.exe",
+            "args": ["resources/shaders"],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Lldb-Test",
             "program": "${workspaceFolder}/build/test.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
@@ -31,11 +40,45 @@
         {
             "type": "codelldb",
             "request": "launch",
-            "name": "Codelldb-Debug",
+            "name": "Codelldb-Precompiler",
+            "program": "${workspaceFolder}/build/precompiler.exe",
+            "args": ["resources/shaders"],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        },
+        {
+            "type": "codelldb",
+            "request": "launch",
+            "name": "Codelldb-Test",
             "program": "${workspaceFolder}/build/test.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false
+        },
+        {
+            "type": "gdb",
+            "request": "launch",
+            "name": "Gdb-Creator",
+            "target": "${workspaceFolder}/build/creator.exe",
+            "arguments": "resources/shaders",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false
+        },
+        {
+            "type": "gdb",
+            "request": "launch",
+            "name": "Gdb-Precompiler",
+            "target": "${workspaceFolder}/build/precompiler.exe",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false
+        },
+        {
+            "type": "gdb",
+            "request": "launch",
+            "name": "Gdb-Test",
+            "target": "${workspaceFolder}/build/test.exe",
+            "cwd": "${workspaceFolder}",
+            "stopAtEntry": false
         }
     ]
 }

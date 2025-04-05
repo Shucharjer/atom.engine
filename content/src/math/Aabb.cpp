@@ -1,6 +1,6 @@
 #include "math/Aabb.hpp"
 #include <core/langdef.hpp>
-#include "pch.hpp"
+#include "pchs/math.hpp"
 
 namespace atom::engine::math {
 

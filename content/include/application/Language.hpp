@@ -1,18 +1,34 @@
 #pragma once
 #include <fstream>
-#include <string_view>
+#include <easylogging++.h>
 #include <core/langdef.hpp>
 #include <nlohmann/json.hpp>
-#include "io/file.hpp"
 
 namespace atom::engine::application {
 
-auto& GetLanguage() {
+inline auto& GetLanguage() {
     static nlohmann::json lang;
     return lang;
 }
 
-void LoadLanguageFile(const std::string& path) {
+inline void SetToDefaultLanguage() {
+    auto& lang = GetLanguage();
+    lang       = R"(
+        {
+            "docker": {
+            "self": "docker",
+            "project": {
+                "self": "Project",
+                "OpenProject": "Open project",
+                "saveProject": "Save project",
+                "saveAs": "Save as"
+            }
+        }
+    }
+    )";
+}
+
+inline void LoadLanguageFile(const std::string& path) {
     auto& lang = GetLanguage();
 
     std::ifstream stream(path);
@@ -22,7 +38,7 @@ void LoadLanguageFile(const std::string& path) {
             stream >> lang;
         }
         catch (...) {
-            // Log err
+            LOG(ERROR) << "Failed to parse the language file.";
         }
     }
 }

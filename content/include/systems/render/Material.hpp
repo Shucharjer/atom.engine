@@ -1,9 +1,9 @@
 #pragma once
 #include <asset.hpp>
 #include <core/langdef.hpp>
-#include "pch.hpp"
+#include "pchs/graphics.hpp"
+#include "pchs/math.hpp"
 #include "systems/render/Texture.hpp"
-
 
 namespace atom::engine::systems::render {
 
@@ -28,6 +28,8 @@ struct Material {
     Texture roughnessTexture;
     Texture occlusionTexture;
     Texture normalTexture;
+
+    void active() const noexcept;
 
     std::string name;
 };

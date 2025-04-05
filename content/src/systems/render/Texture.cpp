@@ -1,9 +1,8 @@
 #include "systems/render/Texture.hpp"
-#include "pch.hpp"
-
 #include <memory>
 #include <easylogging++.h>
 #include <asset.hpp>
+#include "glad/glad.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

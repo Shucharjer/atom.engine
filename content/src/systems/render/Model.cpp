@@ -1,7 +1,5 @@
 #include "systems/render/Model.hpp"
 #include <utility>
-#include "pch.hpp"
-
 #include <assimp/material.h>
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
@@ -15,10 +13,13 @@
 #include <core/langdef.hpp>
 #include <memory/destroyer.hpp>
 #include <schedule.hpp>
+#include "pchs/graphics.hpp"
 #include "platform/path.hpp"
+#include "systems/render/BufferObject.hpp"
 #include "systems/render/Material.hpp"
 #include "systems/render/Texture.hpp"
 #include "systems/render/Vertex.hpp"
+#include "systems/render/VertexArrayObject.hpp"
 
 namespace atom::engine::systems::render {
 
@@ -95,7 +96,9 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
     const auto size_vector2f = 2 * sizeof(float);
     const auto size_vector3f = 3 * sizeof(float);
 
+    const auto size = sizeof(Vertex) * mesh->mNumVertices;
     Mesh loading_mesh{};
+    loading_mesh.vbo = VertexBufferObject(size);
 
     const std::string& dirconcat = directory + platform::sep;
 
@@ -109,6 +112,8 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         }
         loading_mesh.vertices.emplace_back(vertex);
     }
+    loading_mesh.vbo.set(loading_mesh.vertices.data());
+    loading_mesh.vao.addAttribute<Vertex>(0, loading_mesh.vbo);
 
     // load indices in this mesh
     for (auto i = 0; i < mesh->mNumFaces; ++i) {
@@ -202,7 +207,7 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         loading_mesh.materials.emplace_back(loading_material);
     }
 
-    return loading_mesh;
+    return std::move(loading_mesh);
 }
 
 ATOM_RELEASE_INLINE static void ProcessNodes(

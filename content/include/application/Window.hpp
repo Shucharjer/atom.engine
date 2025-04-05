@@ -6,9 +6,11 @@
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
 #include <asset.hpp>
+#include <core/langdef.hpp>
 #include <reflection.hpp>
 #include <world.hpp>
 #include "application/Panel.hpp"
+#include "application/application.hpp"
 
 namespace atom::engine::application {
 
@@ -16,16 +18,30 @@ const bool kDefaultFullscreen  = false;
 const int kDefaultVsync        = 0;
 const int kDefaultWidth        = 1280;
 const int kDefaultHeight       = 960;
-const char* const kDefaultName = "Untitled Window";
 const int kFpsMax              = 144;
+const char* const kDefaultName = "Untitled Window";
+
+#if defined(_WIN32) || defined(_WIN64)
+constexpr const char* kFont = R"(C:\Windows\Fonts\STSONG.TTF)";
+#elif defined(__linux) || defined(__linux__)
+constexpr const char* kFont = "/usr/share/fonts/.TTF";
+#else
+    #error "Unknown system"
+#endif
+
+struct FontConfig {
+    std::string file = kFont;
+    float sizePixels = num_sixteen;
+};
 
 struct WindowConfig {
     bool fullscreen  = kDefaultFullscreen;
     int vsync        = kDefaultVsync;
     int width        = kDefaultWidth;
     int height       = kDefaultHeight;
-    std::string name = kDefaultName;
     int fpsMax       = kFpsMax;
+    std::string name = kDefaultName;
+    FontConfig fontConfig;
 };
 
 auto LoadWindowConfig(const std::filesystem::path& path) -> WindowConfig;
@@ -88,7 +104,7 @@ protected:
     void erase(std::string_view name) noexcept;
 
     std::shared_ptr<::atom::ecs::world> createWorld(const std::string& name);
-    std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds();
+    atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds();
 
 private:
     void startup();
@@ -97,8 +113,8 @@ private:
 
     bool m_Terminate = false;
 
-    std::map<std::string, std::shared_ptr<::atom::ecs::world>> m_Worlds;
-    std::map<std::string, Panel*> m_Panels;
+    atom::map<std::string, std::shared_ptr<::atom::ecs::world>> m_Worlds;
+    atom::map<std::string, Panel*> m_Panels;
     void (*m_RenderCallback)() = nullptr;
 
     WindowConfig m_WindowConfig;

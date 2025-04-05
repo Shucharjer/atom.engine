@@ -1,4 +1,5 @@
 #include "application/Window.hpp"
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -30,7 +31,11 @@ auto LoadWindowConfig(const std::filesystem::path& path) -> WindowConfig {
         stream.close();
 
         // config = json;
-        ::from_json(json, config);
+        try {
+            ::from_json(json, config);
+        }
+        catch (...) {
+        }
     }
     else {
         LOG(INFO) << "WindowConfig not exist";
@@ -59,9 +64,7 @@ void SaveWindowConfig(const std::filesystem::path& path, const WindowConfig& con
 Window::Window(WindowConfig config, GLFWwindow* shareWindow)
     : m_WindowConfig(std::move(config)), m_pShareWindow(shareWindow), m_Worlds(), m_Panels() {}
 
-Window::~Window() {
-    terminate();
-}
+Window::~Window() { terminate(); }
 
 WindowConfig& Window::config() { return m_WindowConfig; }
 
@@ -132,7 +135,24 @@ int Window::init() {
 #endif
     ImGui_ImplOpenGL3_Init(glslVersion);
 
+    // setup fonts
     io.Fonts->AddFontDefault();
+
+    auto& fontConfig = m_WindowConfig.fontConfig;
+    ImFontConfig imFontConfig{};
+    imFontConfig.MergeMode        = true;
+    imFontConfig.GlyphMaxAdvanceX = 12.0F;
+    constexpr std::array<ImWchar, 16> range{ 0x0020, 0x00FF, 0x2E80, 0x9FFF, 0 };
+    imFontConfig.GlyphRanges = range.data();
+    io.Fonts->AddFontFromFileTTF(
+        fontConfig.file.c_str(),
+        fontConfig.sizePixels,
+        &imFontConfig,
+        io.Fonts->GetGlyphRangesChineseFull()
+    );
+    ImGui_ImplOpenGL3_CreateFontsTexture();
+
+    // set callbacks
 
     glfwSetFramebufferSizeCallback(m_pWindow, GlfwFramebufferCallback);
 
@@ -222,7 +242,7 @@ std::shared_ptr<::atom::ecs::world> Window::createWorld(const std::string& name)
     return m_Worlds.at(name);
 }
 
-std::map<std::string, std::shared_ptr<::atom::ecs::world>>& Window::worlds() { return m_Worlds; }
+atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& Window::worlds() { return m_Worlds; }
 
 void Window::startup() {
     for (auto& [name, world] : m_Worlds) {
@@ -246,7 +266,7 @@ void Window::terminate() {
     if (!m_Terminate) {
         m_Terminate = true;
 
-        LOG(INFO) << "Try erminate the window [" << m_WindowConfig.name <<"].";
+        LOG(INFO) << "Try erminate the window [" << m_WindowConfig.name << "].";
 
         onTerminate();
 

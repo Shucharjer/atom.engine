@@ -1,34 +1,22 @@
+#include <fstream>
 #include <memory>
+#include <easylogging++.h>
 #include <imgui.h>
+#include "Paths.hpp"
 #include "application/DockerPanel.hpp"
 #include "application/Language.hpp"
 #include "application/Window.hpp"
-
+#include "panels/ApplicationDockerPanel.hpp"
+#include "platform/path.hpp"
 
 using namespace atom::engine::application;
+using namespace atom::creator;
+using namespace atom::creator::panels;
+using namespace atom::engine::platform;
 
-const auto kApplicationDockerWindowFlags =
-    ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-    ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground |
-    ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
-
-class ApplicationDockerPanel : public DockerPanel {
-public:
-    explicit ApplicationDockerPanel()
-        : DockerPanel("docker", true, kApplicationDockerWindowFlags) {}
-
-    void layout(float deltaTime, std::map<std::string, std::shared_ptr<atom::ecs::world>>& worlds)
-        override {
-        auto& lang = GetLanguage();
-
-        ImGui::BeginMainMenuBar();
-
-        // ImGui::BeginMenu();
-        // ImGui::EndMenu();
-
-        ImGui::EndMainMenuBar();
-    }
-};
+static inline void CheckWindowConfig(WindowConfig& config) noexcept {
+    config.name = "Atom Creator";
+}
 
 class ApplicationWindow : public Window {
 public:
@@ -42,12 +30,36 @@ public:
     }
 };
 
+std::string GetLanguageFileName() {
+    nlohmann::json json;
+    std::ifstream stream(kAtomLocalizationFile);
+    if (stream.is_open()) [[likely]] {
+        try {
+            stream >> json;
+        }
+        catch (...) {
+            LOG(ERROR) << "Failed to open localization.json";
+        }
+    }
+
+    if (auto iter = json.find("filename"); iter != json.end()) {
+        return iter.value();
+    }
+    else {
+        LOG(ERROR) << "Couldn't find filename in localization.json";
+        return {};
+    }
+}
+
 int main() {
-    auto config = LoadWindowConfig("");
+    LoadLanguageFile(kAtomLocalizationDirectory + sep + GetLanguageFileName());
+    auto config = LoadWindowConfig(kAtomDirectory + sep + "window.json");
+    CheckWindowConfig(config);
     ApplicationWindow window{ config };
     if (!window.init()) {
         window.run();
     }
     window.terminate();
+    SaveWindowConfig(kAtomDirectory + sep + "window.json", config);
     return 0;
 }

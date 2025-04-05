@@ -1,5 +1,6 @@
 #include "systems/render/VertexArrayObject.hpp"
-#include "pch.hpp"
+#include <easylogging++.h>
+#include "pchs/graphics.hpp"
 
 #include "systems/render/BufferObject.hpp"
 
@@ -51,6 +52,9 @@ void VertexArrayObject::addAttribute(const GLuint index, VertexBufferObject& vbo
 void VertexArrayObject::bind() const noexcept {
     if (m_Id) [[likely]] {
         glBindVertexArray(m_Id);
+    }
+    else [[unlikely]] {
+        LOG(INFO) << "try bind to a empty vertex array object";
     }
 }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <glad/glad.h>
 #include <containers.hpp>
 #include <ecs.hpp>
 
@@ -36,7 +37,7 @@ public:
     ~Texture() noexcept;
 
     [[nodiscard]] const std::string& path() const noexcept;
-    [[nodiscard]] constexpr auto type() const noexcept -> asset_type;
+    [[nodiscard]] constexpr auto type() const noexcept -> ecs::asset_type;
 
     struct Proxy {
         uint32_t m_Id;
@@ -45,8 +46,8 @@ public:
     using proxy_type = Proxy;
     using key_type   = std::string;
 
-    [[nodiscard]] resource_handle get_handle() const noexcept { return m_Handle; }
-    void set_handle(const resource_handle handle) noexcept { m_Handle = handle; }
+    [[nodiscard]] ecs::resource_handle get_handle() const noexcept { return m_Handle; }
+    void set_handle(const ecs::resource_handle handle) noexcept { m_Handle = handle; }
 
     [[nodiscard]] auto load(
         bool correction = false,
@@ -56,13 +57,13 @@ public:
         GLint magFilter = GL_LINEAR_MIPMAP_LINEAR
     ) const -> shared_ptr<Texture::Proxy>;
     void unload() noexcept;
-    void reload(const resource_handle handle, const key_type& key, const TextureType type);
+    void reload(const ecs::resource_handle handle, const key_type& key, const TextureType type);
 
     [[nodiscard]] TextureType getType() const noexcept;
     void setType(const TextureType type) noexcept;
 
 private:
-    resource_handle m_Handle;
+    ecs::resource_handle m_Handle;
     TextureType m_Type;
     std::string m_Path;
 };

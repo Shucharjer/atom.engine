@@ -48,8 +48,8 @@ public:
     constexpr static auto buffer_type = GL_UNIFORM_BUFFER;
 };
 
-template class BufferObject<BasicVertexBufferObject>;
-template class BufferObject<BasicUniformBufferObject>;
+extern template class BufferObject<BasicVertexBufferObject>;
+extern template class BufferObject<BasicUniformBufferObject>;
 
 using VertexBufferObject  = BufferObject<BasicVertexBufferObject>;
 using UniformBufferObject = BufferObject<BasicUniformBufferObject>;

@@ -15,11 +15,12 @@ class KeyboardInput : public utils::singleton<KeyboardInput> {
 public:
     static void Callback(GLFWwindow* pWindow, int key, int scancode, int action, int mods);
 
-    void setPressCallback(int key, void(*callback)());
-    void setReleaseCallback(int key, void(*callback)());
+    void setPressCallback(int key, void (*callback)());
+    void setReleaseCallback(int key, void (*callback)());
+
 private:
-    std::unordered_map<int, void(*)()> m_PressCallbacks;
-    std::unordered_map<int, void(*)()> m_ReleaseCallbacks;
+    std::unordered_map<int, void (*)()> m_PressCallbacks;
+    std::unordered_map<int, void (*)()> m_ReleaseCallbacks;
 };
 
 } // namespace atom::engine::application

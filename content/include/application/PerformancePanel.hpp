@@ -10,8 +10,9 @@ public:
     PerformancePanel() : Panel("Performance") {}
 
 private:
-    void layout(float deltaTime, std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds)
-        override;
+    void layout(
+        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
+    ) override;
 };
 
 } // namespace atom::engine::application

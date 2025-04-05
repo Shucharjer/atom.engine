@@ -10,9 +10,24 @@ namespace atom::engine::application {
 
 class Panel {
 public:
-    Panel(const char* name, const bool display = true, ImGuiWindowFlags flags = 0, const bool open = true);
-    Panel(const std::string& name, const bool display = true, ImGuiWindowFlags flags = 0, const bool open = true);
-    Panel(std::string&& name, const bool display = true, ImGuiWindowFlags flags = 0, const bool open = true);
+    Panel(
+        const char* name,
+        const bool display     = true,
+        ImGuiWindowFlags flags = 0,
+        const bool open        = true
+    );
+    Panel(
+        const std::string& name,
+        const bool display     = true,
+        ImGuiWindowFlags flags = 0,
+        const bool open        = true
+    );
+    Panel(
+        std::string&& name,
+        const bool display     = true,
+        ImGuiWindowFlags flags = 0,
+        const bool open        = true
+    );
 
     Panel(const Panel&)            = default;
     Panel(Panel&&)                 = default;
@@ -36,7 +51,7 @@ public:
     [[nodiscard]] const ImGuiWindowFlags& getFlags() const noexcept;
 
     void display(
-        float deltaTime, std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
+        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
     );
 
 protected:
@@ -44,7 +59,7 @@ protected:
     virtual void afterBegin();
 
     virtual void layout(
-        float deltaTime, std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
+        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
     );
 
     virtual void onEnd();

@@ -25,7 +25,7 @@ void Panel::setOpen(const bool open) { m_Open = open; }
 void Panel::setFlags(const ImGuiWindowFlags flags) { m_Flags = flags; }
 
 void Panel::display(
-    float deltaTime, std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
+    float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
 ) {
     onBegin();
     m_Display = ImGui::Begin(m_Name.c_str(), &m_Open, m_Flags);
@@ -47,7 +47,7 @@ const ImGuiWindowFlags& Panel::getFlags() const noexcept { return m_Flags; }
 
 void Panel::onBegin() {}
 void Panel::afterBegin() {}
-void Panel::layout(float deltaTime, std::map<std::string, std::shared_ptr<ecs::world>>& worlds) {}
+void Panel::layout(float deltaTime, atom::map<std::string, std::shared_ptr<ecs::world>>& worlds) {}
 void Panel::onEnd() {}
 void Panel::afterEnd() {}
 } // namespace atom::engine::application

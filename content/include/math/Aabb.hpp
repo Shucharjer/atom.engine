@@ -1,11 +1,10 @@
 #pragma once
-#include "pch.hpp"
+#include "pchs/math.hpp"
 
 namespace atom::engine::math {
 
 class Aabb {
 public:
-
     void setMin(const Vector3& vec) noexcept;
     void setMinX(float x) noexcept;
     void setMinY(float y) noexcept;
@@ -32,4 +31,4 @@ private:
     Vector3 m_Max;
 };
 
-}
+} // namespace atom::engine::math

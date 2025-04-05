@@ -55,10 +55,10 @@ private:
 
     GLuint m_Id{};
     GLuint m_Rbo{};
-    std::uint32_t m_Width;
-    std::uint32_t m_Height;
-    std::uint32_t m_Samples;
-    std::uint32_t m_ColorAttachments;
+    std::uint32_t m_Width{};
+    std::uint32_t m_Height{};
+    std::uint32_t m_Samples{};
+    std::uint32_t m_ColorAttachments{};
     atom::map<AttachmentType, GLuint> m_Textures;
 };
 

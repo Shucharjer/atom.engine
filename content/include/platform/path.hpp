@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <easylogging++.h>
 #include "core/langdef.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -18,7 +19,6 @@ constexpr auto sep = '\\';
 constexpr auto sep = '/';
 #endif
 
-
 ATOM_FORCE_INLINE std::string GetUserHomeDirectroy() {
     std::string homeDir;
 #if defined(_WIN32) || defined(_WIN64)
@@ -27,7 +27,7 @@ ATOM_FORCE_INLINE std::string GetUserHomeDirectroy() {
         homeDir = path;
     }
     else {
-        // Log err
+        LOG(ERROR) << "Faield to get user home directory.";
     }
 #else
     const char* home;
@@ -40,10 +40,10 @@ ATOM_FORCE_INLINE std::string GetUserHomeDirectroy() {
         homeDir = home;
     }
     else {
-        // Log err
+        LOG(ERROR) << "Faield to get user home directory.";
     }
 #endif
     return homeDir;
 }
 
-}
+} // namespace atom::engine::platform

@@ -1,4 +1,7 @@
 #include "systems/render/BufferObject.hpp"
-#include "pch.hpp"
+#include "pchs/graphics.hpp"
 
-using namespace atom::engine::systems::render;
+namespace atom::engine::systems::render {
+template class BufferObject<BasicVertexBufferObject>;
+template class BufferObject<BasicUniformBufferObject>;
+} // namespace atom::engine::systems::render

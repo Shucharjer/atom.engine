@@ -9,7 +9,10 @@
 #include "asset.hpp"
 #include "io/file.hpp"
 #include "platform/path.hpp"
+#include "systems/render/BufferObject.hpp"
+#include "systems/render/Camera.hpp"
 #include "systems/render/Model.hpp"
+#include "systems/render/VertexArrayObject.hpp"
 
 using namespace atom::ecs;
 using namespace atom::engine::application;
@@ -42,8 +45,9 @@ public:
 
 private:
     void onBegin() override {}
-    void layout(float deltaTime, std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds)
-        override {}
+    void layout(
+        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
+    ) override {}
 };
 
 class MainPanel final : public Panel {
@@ -64,8 +68,9 @@ private:
         ImGui::SetNextWindowSize(mainViewport->Size);
     }
 
-    void layout(float deltaTime, std::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds)
-        override {
+    void layout(
+        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
+    ) override {
         constexpr auto kStart = "Start";
         auto buttonSize       = ImGui::CalcTextSize(kStart);
         auto& style           = ImGui::GetStyle();
@@ -84,31 +89,31 @@ const auto ModelsFolder   = ResourceFolder / "models";
 const auto LoraPath       = ModelsFolder.string() + sep + "诺菈_by_幻塔" + sep + "诺菈.pmx";
 const auto MikuPath       = ModelsFolder.string() + sep + "miku" + sep + "model.pmx";
 
+auto& hub = hub::instance();
+auto& lib = ::hub.library<Model>();
+auto& tab = ::hub.table<Model>();
+Camera gCamera;
+
 static void StartupSys(command& command, queryer& queryer) {
-    auto entity   = command.spawn<Model>(LoraPath);
-    auto& model   = queryer.get<Model>(entity);
-    auto& hub     = hub::instance();
-    auto& library = hub.library<Model>();
-    auto& table   = hub.table<Model>();
-    auto&& proxy  = model.load();
-    auto handle   = library.install(std::move(proxy));
+    auto entity = command.spawn<Model>(LoraPath);
+    auto& model = queryer.get<Model>(entity);
+    auto proxy  = model.load();
+    auto handle = lib.install(std::move(proxy));
     model.set_handle(handle);
-    table.emplace(model.path(), handle);
+    tab.emplace(model.path(), handle);
 }
 
 static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
-    auto entities = queryer.query_non_of<Model>();
-    for (const auto entity : entities) {
-        command.attach<Model>(entity, MikuPath);
+    const auto view = gCamera.view();
+    const auto proj = gCamera.proj();
 
-        auto& model   = queryer.get<Model>(entity);
-        auto& hub     = hub::instance();
-        auto& library = hub.library<Model>();
-        auto& table   = hub.table<Model>();
-        if (!table.contains(model.path())) {
-            auto proxy  = model.load();
-            auto handle = library.install(std::move(proxy));
-            table.emplace(model.path(), handle);
+    auto entities = queryer.query_any_of<Model>();
+    for (const auto entity : entities) {
+        auto& model = queryer.get<Model>(entity);
+        auto handle = model.get_handle();
+        auto proxy  = lib.fetch(handle);
+        for (const auto& mesh : proxy->meshes) {
+            // mesh.draw();
         }
     }
 }

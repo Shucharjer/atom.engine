@@ -10,7 +10,6 @@
 #include <reflection.hpp>
 #include <world.hpp>
 #include "application/Panel.hpp"
-#include "application/application.hpp"
 
 namespace atom::engine::application {
 

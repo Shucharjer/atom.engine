@@ -11,6 +11,7 @@
 #include <core/langdef.hpp>
 #include <reflection.hpp>
 #include "application/KeyboardInput.hpp"
+#include "application/application.hpp"
 #include "io/file.hpp"
 
 namespace atom::engine::application {

@@ -100,10 +100,20 @@ target_link_libraries(Engine PUBLIC
 add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP)
 add_compile_definitions(ELPP_THREAD_SAFE)
 
+option(ATOM_USE_PRECOMPILE_HEADER OFF)
+
+if (ATOM_USE_PRECOMPILE_HEADER)
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.16")
     target_precompile_headers(Engine PRIVATE
-        ${Engine_SOURCE_DIR}/content/include/pch.hpp
+        ${Engine_SOURCE_DIR}/content/include/pchs/ecs.hpp
+        ${Engine_SOURCE_DIR}/content/include/pchs/math.hpp
+        ${Engine_SOURCE_DIR}/content/include/pchs/std.hpp
+        ${Engine_SOURCE_DIR}/content/include/pchs/logger.hpp
+        ${Engine_SOURCE_DIR}/content/include/pchs/graphics.hpp
     )
+else()
+    message(WARNING "precompile header is not support on this scope")
+endif()
 endif()
 
 include(JoinPaths)

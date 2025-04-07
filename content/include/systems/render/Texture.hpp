@@ -62,6 +62,8 @@ public:
     [[nodiscard]] TextureType getType() const noexcept;
     void setType(const TextureType type) noexcept;
 
+    operator bool() const noexcept;
+
 private:
     ecs::resource_handle m_Handle;
     TextureType m_Type;

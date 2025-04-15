@@ -162,3 +162,5 @@ void Texture::reload(const resource_handle handle, const key_type& key, const Te
 
 TextureType Texture::getType() const noexcept { return m_Type; }
 void Texture::setType(const TextureType type) noexcept { m_Type = type; }
+
+Texture::operator bool() const noexcept { return m_Handle; }

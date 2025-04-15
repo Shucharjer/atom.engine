@@ -29,9 +29,9 @@ struct Material {
     Texture occlusionTexture;
     Texture normalTexture;
 
-    void active() const noexcept;
-
     std::string name;
+
+    void active() const noexcept;
 };
 
 } // namespace atom::engine::systems::render

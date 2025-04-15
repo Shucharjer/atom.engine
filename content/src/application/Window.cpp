@@ -18,7 +18,7 @@ namespace atom::engine::application {
 
 auto LoadWindowConfig(const std::filesystem::path& path) -> WindowConfig {
     std::ifstream stream(path);
-    WindowConfig config;
+    WindowConfig config{};
 
     if (stream.is_open()) {
         nlohmann::json json;
@@ -26,16 +26,27 @@ auto LoadWindowConfig(const std::filesystem::path& path) -> WindowConfig {
             stream >> json;
         }
         catch (...) {
-            LOG(ERROR) << "F";
+            LOG(ERROR) << "Failed to read file as json";
         }
 
         stream.close();
 
-        // config = json;
+        WindowConfig temp;
         try {
-            ::from_json(json, config);
+            ::from_json(json, temp);
+            config.fullscreen = temp.fullscreen;
+            config.vsync      = temp.vsync;
+            config.width      = temp.width;
+            config.height     = temp.height;
+            config.fpsMax     = temp.fpsMax;
+            config.name       = temp.name;
+            if (!temp.fontConfig.file.empty()) {
+                config.fontConfig.sizePixels = temp.fontConfig.sizePixels;
+                config.fontConfig.file       = temp.fontConfig.file;
+            }
         }
         catch (...) {
+            LOG(ERROR) << "Failed to deserialize window config.";
         }
     }
     else {
@@ -62,7 +73,10 @@ void SaveWindowConfig(const std::filesystem::path& path, const WindowConfig& con
     }
 }
 
-Window::Window(WindowConfig config, GLFWwindow* shareWindow)
+Window::Window(const WindowConfig& config, GLFWwindow* shareWindow)
+    : m_WindowConfig(config), m_pShareWindow(shareWindow), m_Worlds(), m_Panels() {}
+
+Window::Window(WindowConfig&& config, GLFWwindow* shareWindow)
     : m_WindowConfig(std::move(config)), m_pShareWindow(shareWindow), m_Worlds(), m_Panels() {}
 
 Window::~Window() { terminate(); }
@@ -140,18 +154,21 @@ int Window::init() {
     io.Fonts->AddFontDefault();
 
     auto& fontConfig = m_WindowConfig.fontConfig;
-    ImFontConfig imFontConfig{};
-    imFontConfig.MergeMode        = true;
-    imFontConfig.GlyphMaxAdvanceX = 12.0F;
-    constexpr std::array<ImWchar, 16> range{ 0x0020, 0x00FF, 0x2E80, 0x9FFF, 0 };
-    imFontConfig.GlyphRanges = range.data();
-    io.Fonts->AddFontFromFileTTF(
-        fontConfig.file.c_str(),
-        fontConfig.sizePixels,
-        &imFontConfig,
-        io.Fonts->GetGlyphRangesChineseFull()
-    );
-    ImGui_ImplOpenGL3_CreateFontsTexture();
+    if (!fontConfig.file.empty()) {
+        ImFontConfig imFontConfig{};
+        imFontConfig.MergeMode        = true;
+        imFontConfig.GlyphMaxAdvanceX = 12.0F;
+        constexpr std::array<ImWchar, 16> range{ 0x0020, 0x00FF, 0x2E80, 0x9FFF, 0 };
+        imFontConfig.GlyphRanges = range.data();
+        LOG(INFO) << fontConfig.file;
+        io.Fonts->AddFontFromFileTTF(
+            fontConfig.file.c_str(),
+            fontConfig.sizePixels,
+            &imFontConfig,
+            io.Fonts->GetGlyphRangesChineseFull()
+        );
+        ImGui_ImplOpenGL3_CreateFontsTexture();
+    }
 
     // set callbacks
 

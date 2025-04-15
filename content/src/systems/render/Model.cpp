@@ -21,6 +21,8 @@
 #include "systems/render/Vertex.hpp"
 #include "systems/render/VertexArrayObject.hpp"
 
+#define NAME_OF_ARG(x) #x
+
 namespace atom::engine::systems::render {
 
 Model::Model(const std::string& path) : m_Handle(), m_Path(path) {}
@@ -71,9 +73,13 @@ Model::~Model() noexcept = default;
 }
 
 ATOM_RELEASE_INLINE static void SetTexture(
-    table<Texture>& table, library<Texture>& library, Texture& texture, const std::string& path
+    table<Texture>& table,
+    library<Texture>& library,
+    Texture& texture,
+    const std::string& path,
+    const char* textureType
 ) {
-    LOG(INFO) << "Setting texture at {" << path << "}";
+    LOG(INFO) << "Setting " << textureType << " at {" << path << "}";
     Texture tex(path);
     if (!table.contains(path)) {
         LOG(INFO) << "Texture not exist, creating...";
@@ -169,39 +175,93 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         auto& library = hub.library<Texture>();
         auto& table   = hub.table<Texture>();
         if (AI_SUCCESS == material->GetTexture(aiTextureType_BASE_COLOR, 0, &path)) {
-            SetTexture(table, library, loading_material.baseColorTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.baseColorTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_BASE_COLOR)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT, 0, &path)) {
-            SetTexture(table, library, loading_material.ambientTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.ambientTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_AMBIENT)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &path)) {
-            SetTexture(table, library, loading_material.diffuseTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.diffuseTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_DIFFUSE)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_SPECULAR, 0, &path)) {
-            SetTexture(table, library, loading_material.specularTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.specularTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_SPECULAR)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_EMISSIVE, 0, &path)) {
-            SetTexture(table, library, loading_material.emissiveTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.emissiveTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_EMISSIVE)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_METALNESS, 0, &path)) {
-            SetTexture(table, library, loading_material.metallicTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.metallicTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_METALNESS)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &path)) {
-            SetTexture(table, library, loading_material.roughnessTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.roughnessTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_DIFFUSE_ROUGHNESS)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &path)) {
-            SetTexture(table, library, loading_material.occlusionTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.occlusionTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_AMBIENT_OCCLUSION)
+            );
         }
 
         if (AI_SUCCESS == material->GetTexture(aiTextureType_NORMALS, 0, &path)) {
-            SetTexture(table, library, loading_material.normalTexture, dirconcat + path.C_Str());
+            SetTexture(
+                table,
+                library,
+                loading_material.normalTexture,
+                dirconcat + path.C_Str(),
+                NAME_OF_ARG(aiTextureType_NORMALS)
+            );
         }
 
         loading_mesh.materials.emplace_back(loading_material);
@@ -236,7 +296,8 @@ auto Model::load() const -> shared_ptr<Model::Proxy> {
 
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(
-        m_Path.c_str(), aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_OptimizeMeshes
+        m_Path.c_str(),
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_OptimizeMeshes | aiProcess_GenNormals
     );
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -288,3 +349,5 @@ void Model::reload(const key_type& key, const resource_handle handle) {
 }
 
 } // namespace atom::engine::systems::render
+
+#undef FirstOf

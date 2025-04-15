@@ -40,7 +40,7 @@ struct WindowConfig {
     int height       = kDefaultHeight;
     int fpsMax       = kFpsMax;
     std::string name = kDefaultName;
-    FontConfig fontConfig;
+    FontConfig fontConfig{};
 };
 
 auto LoadWindowConfig(const std::filesystem::path& path) -> WindowConfig;
@@ -48,7 +48,8 @@ void SaveWindowConfig(const std::filesystem::path& path, const WindowConfig& con
 
 class Window {
 public:
-    explicit Window(WindowConfig config = WindowConfig{}, GLFWwindow* shareWindow = nullptr);
+    explicit Window(const WindowConfig& config = WindowConfig{}, GLFWwindow* shareWindow = nullptr);
+    explicit Window(WindowConfig&& config, GLFWwindow* shareWindow = nullptr);
 
     Window(const Window&)            = delete;
     Window(Window&&)                 = delete;

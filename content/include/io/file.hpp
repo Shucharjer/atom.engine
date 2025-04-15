@@ -6,7 +6,6 @@
 #include <ios>
 #include <string>
 #include <easylogging++.h>
-#include <minwindef.h>
 #include <core/langdef.hpp>
 #include <schedule.hpp>
 #include <thread/thread_pool.hpp>
@@ -74,7 +73,7 @@ ATOM_FORCE_INLINE std::future<bool> AsyncWriteToFile(
     const std::filesystem::path& path, Content&& content
 ) {
     auto& thread_pool = ecs::scheduler::thread_pool();
-    thread_pool.enqueue(WriteToFile, path, std::forward<Content>(content));
+    return thread_pool.enqueue(WriteToFile, path, std::forward<Content>(content));
 }
 
 /*! @cond TURN_OFF_DOXYGEN */

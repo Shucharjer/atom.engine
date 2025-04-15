@@ -30,7 +30,7 @@ constexpr const char* kFont = "/usr/share/fonts/.TTF";
 
 struct FontConfig {
     std::string file = kFont;
-    float sizePixels = num_sixteen;
+    float sizePixels = magic_16;
 };
 
 struct WindowConfig {

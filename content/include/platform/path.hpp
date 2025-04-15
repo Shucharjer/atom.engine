@@ -8,6 +8,7 @@
     #include <Windows.h>
 
 #else
+    #include <pwd.h>
     #include <unistd.h>
 #endif
 
@@ -32,7 +33,7 @@ ATOM_FORCE_INLINE std::string GetUserHomeDirectroy() {
 #else
     const char* home;
 
-    if ((home == getenv("HOME")) == NULL) {
+    if ((home = getenv("HOME")) == 0) {
         home = getpwuid(getuid())->pw_dir;
     }
 

@@ -16,6 +16,7 @@
 #include <schedule.hpp>
 #include <thread/thread_pool.hpp>
 #include "io/file.hpp"
+#include "pchs/math.hpp"
 
 using namespace atom;
 using namespace atom::ecs;
@@ -61,7 +62,7 @@ ATOM_FORCE_INLINE void CheckShaderCompileStatus(uint32_t shader, const ShaderTyp
     if (!success) [[unlikely]] {
         std::array<GLchar, kBufSize> infoLog{};
         glGetShaderInfoLog(shader, kBufSize, nullptr, infoLog.data());
-        LOG(INFO) << ShaderTypeString(type) << " compile failed: " << infoLog.data();
+        LOG(ERROR) << ShaderTypeString(type) << " compile failed: " << infoLog.data();
     }
 }
 
@@ -109,7 +110,7 @@ ATOM_FORCE_INLINE static void CheckShaderProgramLinkStatus(uint32_t program) {
     if (!success) {
         std::array<GLchar, kBufSize> infoLog{};
         glGetProgramInfoLog(program, kBufSize, nullptr, infoLog.data());
-        LOG(INFO) << "shader program link failed: " << infoLog.data();
+        LOG(ERROR) << "shader program link failed: " << infoLog.data();
     }
 }
 
@@ -198,7 +199,7 @@ void ShaderProgram::setFloat(const std::string& name, float val) const {
     glUniform1f(UniformLocation(m_Program, name), val);
 }
 
-void ShaderProgram::setVec3(const std::string& name, const glm::vec3& vec) const {
+void ShaderProgram::setVec3(const std::string& name, const math::Vector3& vec) const {
     glUniform3fv(UniformLocation(m_Program, name), 1, glm::value_ptr(vec));
 }
 
@@ -206,7 +207,7 @@ void ShaderProgram::setVec3(const std::string& name, float x, float y, float z) 
     glUniform3f(UniformLocation(m_Program, name), x, y, z);
 }
 
-void ShaderProgram::setMat4(const std::string& name, const glm::mat4& mat) const {
+void ShaderProgram::setMat4(const std::string& name, const math::Mat4& mat) const {
     glUniform4fv(UniformLocation(m_Program, name), 1, glm::value_ptr(mat));
 }
 

@@ -4,7 +4,7 @@
 #include <string>
 #include <glad/glad.h>
 #include <asset.hpp>
-#include <glm/fwd.hpp>
+#include "pchs/math.hpp"
 
 namespace atom::engine::systems::render {
 
@@ -80,9 +80,9 @@ public:
     void use() const noexcept;
 
     void setFloat(const std::string& name, float val) const;
-    void setVec3(const std::string& name, const glm::vec3& vec) const;
+    void setVec3(const std::string& name, const math::Vector3& vec) const;
     void setVec3(const std::string& name, float x, float y, float z) const;
-    void setMat4(const std::string& name, const glm::mat4& mat) const;
+    void setMat4(const std::string& name, const math::Mat4& mat) const;
 
     /**
      * @brief Save this shader program as binary file.

@@ -12,7 +12,7 @@ constexpr float kClassicAspect    = 4.0F / 3.0F;
 constexpr float kDefaultNearPlane = 0.1F;
 constexpr float kDefaultFarPlane  = 1000.F;
 
-struct alignas(num_sixteen) Camera {
+struct alignas(magic_16) Camera {
     math::Vector3 position;
     math::Quaternion orientation;
     math::Vector3 forward = math::Vector3(1.0F, 0.0F, 0.0F);

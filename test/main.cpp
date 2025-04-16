@@ -2,19 +2,25 @@
 #include <imgui.h>
 #include <command.hpp>
 #include <core/langdef.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <queryer.hpp>
+#include <world.hpp>
 #include "application/KeyboardInput.hpp"
 #include "application/Panel.hpp"
 #include "application/Window.hpp"
 #include "asset.hpp"
 #include "io/file.hpp"
+#include "pchs/math.hpp"
 #include "platform/path.hpp"
 #include "systems/render/BufferObject.hpp"
 #include "systems/render/Camera.hpp"
 #include "systems/render/Model.hpp"
+#include "systems/render/ShaderProgram.hpp"
+#include "systems/render/Transform.hpp"
 #include "systems/render/VertexArrayObject.hpp"
 
 using namespace atom::ecs;
+using namespace atom::engine;
 using namespace atom::engine::application;
 using namespace atom::engine::platform;
 using namespace atom::engine::systems::render;
@@ -89,31 +95,47 @@ const auto ModelsFolder   = ResourceFolder / "models";
 const auto LoraPath       = ModelsFolder.string() + sep + "诺菈_by_幻塔" + sep + "诺菈.pmx";
 const auto MikuPath       = ModelsFolder.string() + sep + "miku" + sep + "model.pmx";
 
+const auto VertShaderPath = ResourceFolder / "shaders" / "test.vert.hlsl";
+const auto FragShaderPath = ResourceFolder / "shaders" / "simplyDisplay.frag.hlsl";
+
 auto& hub = hub::instance();
 auto& lib = ::hub.library<Model>();
 auto& tab = ::hub.table<Model>();
 Camera gCamera;
+ShaderProgram* gShaderProgram;
 
 static void StartupSys(command& command, queryer& queryer) {
-    auto entity = command.spawn<Model>(LoraPath);
+    auto entity = command.spawn<Model, Transform>(LoraPath, Transform{});
     auto& model = queryer.get<Model>(entity);
     auto proxy  = model.load();
     auto handle = lib.install(std::move(proxy));
     model.set_handle(handle);
     tab.emplace(model.path(), handle);
+
+    gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
 }
 
 static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     const auto view = gCamera.view();
     const auto proj = gCamera.proj();
+    gShaderProgram->setMat4("view", view);
+    gShaderProgram->setMat4("proj", proj);
+    gShaderProgram->setVec3("viewPos", gCamera.position);
 
-    auto entities = queryer.query_any_of<Model>();
+    auto entities = queryer.query_any_of<Model, Transform>();
     for (const auto entity : entities) {
-        auto& model = queryer.get<Model>(entity);
+        auto& model            = queryer.get<Model>(entity);
+        auto& transform        = queryer.get<Transform>(entity);
+        math::Mat4 modelMatrix = glm::translate(math::Mat4(1.0F), transform.position) *
+                                 glm::toMat4(transform.rotation) *
+                                 glm::scale(math::Mat4(1.0F), transform.scaling);
         auto handle = model.get_handle();
         auto proxy  = lib.fetch(handle);
         for (const auto& mesh : proxy->meshes) {
-            // mesh.draw();
+            if (mesh.visibility) {
+                gShaderProgram->setMat4("model", modelMatrix);
+                mesh.draw(*gShaderProgram);
+            }
         }
     }
 }
@@ -136,9 +158,9 @@ public:
         // pConsole = factory.make<ConsolePanel>();
         // emplace("Console", pConsole);
         auto world = createWorld("main world");
-        world->add_startup(StartupSys);
-        world->add_update(UpdateSys);
-        world->add_shutdown(ShutdownSys);
+        world->add_startup(StartupSys, atom::ecs::late_main_thread);
+        world->add_update(UpdateSys, atom::ecs::late_main_thread);
+        world->add_shutdown(ShutdownSys, atom::ecs::late_main_thread);
     }
 
 private:
@@ -149,10 +171,9 @@ const std::string kConfigPath =
 
 int main(int argc, char* argv[]) {
     auto config = LoadWindowConfig(kConfigPath);
-    CheckWindowConfig(config);
-    ApplicationWindow window{ config };
+    ApplicationWindow window{ std::move(config) };
     SetupWindow(window);
-    SaveWindowConfig(kConfigPath, config);
+    SaveWindowConfig(kConfigPath, window.config());
 
     return 0;
 }

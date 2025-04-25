@@ -191,7 +191,8 @@ if (BUILD_ENGINE_DOCS)
             GIT_SHALLOW 1
         )
 
-        FetchContent_GetProperties(doxygen-awesome-css)
+        FetchContent_MakeAvailable(doxygen-awesome-css)
+        FetchContent_GetProperties(doxygen-awesome-css SOURCE_DIR DOXY_CSS_DIRECTORY)
 
         if(NOT doxygen-awesome-css_POPULATED)
             FetchContent_Populate(doxygen-awesome-css)
@@ -199,15 +200,14 @@ if (BUILD_ENGINE_DOCS)
         endif()
 
         set(DOXY_SOURCE_DIRECTORY ${Engine_DOXY_DIR})
-        set(DOXY_OUTPUT_DIRECTROY ${CMAKE_CURRENT_BINARY_DIR}/docs)
-        set(DOXY_CSS_DIRECTROY ${doxygen-awesome-css_INCLUDE_DIR})
+        set(DOXY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs)
 
         configure_file(doxy.in doxy.cfg @ONLY)
 
         add_custom_target(
             documents
             COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doxy.cfg
-            WORKING_DIRECTORY ${Utils_SOURCE_DIR}
+            WORKING_DIRECTORY ${Engine_SOURCE_DIR}
             VERBATIM
         )
 

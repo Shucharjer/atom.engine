@@ -1,7 +1,7 @@
 prefix=@CMAKE_INSTALL_PREFIX@
-includedir=@Utils_PKGCONFIG_INCLUDEDIR@
+includedir=@Engine_PKGCONFIG_INCLUDEDIR@
 
 Name: Engine
-Description: A collection of basic tools.
+Description: A game engine based on ecs.
 Url: https://github.com/Shucharjer/atom.engine
 Cflags: -I${includedir}

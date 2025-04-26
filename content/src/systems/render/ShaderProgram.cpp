@@ -195,6 +195,10 @@ ATOM_FORCE_INLINE int UniformLocation(unsigned int program, const std::string& n
     return glGetUniformLocation(program, name.c_str());
 }
 
+void ShaderProgram::setInt(const std::string& name, int val) const {
+    glUniform1i(UniformLocation(m_Program, name), val);
+}
+
 void ShaderProgram::setFloat(const std::string& name, float val) const {
     glUniform1f(UniformLocation(m_Program, name), val);
 }

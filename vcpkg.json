@@ -21,8 +21,9 @@
         "glm",
         "nlohmann-json",
         "openal-soft",
+        "libsndfile",
         {
-            "name":"bullet3"
+            "name": "bullet3"
         },
         "tinyfiledialogs",
         "lua",

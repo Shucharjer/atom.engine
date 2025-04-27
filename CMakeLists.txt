@@ -56,6 +56,10 @@ target_link_libraries(Engine PUBLIC Atom::Ecs)
 
 # thridparty
 
+if (WIN32)
+    set(CMAKE_MSVC_RUNTIMEI_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 find_package(imgui CONFIG REQUIRED)
 find_package(lunasvg CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
@@ -72,6 +76,7 @@ find_package(tinyfiledialogs CONFIG REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(easyloggingpp easyloggingpp REQUIRED IMPORTED_TARGET)
 find_package(assimp CONFIG REQUIRED)
+find_package(SndFile CONFIG REQUIRED)
 
 set(THIRDPARTY_DIR "${Engine_SOURCE_DIR}/thirdparty")
 
@@ -95,6 +100,7 @@ target_link_libraries(Engine PUBLIC
     assimp::assimp
     ${BULLET_LIBRARIES}
     Bullet3Dynamics
+    SndFile::sndfile
 )
 
 add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP)

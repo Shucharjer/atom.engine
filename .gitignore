@@ -4,3 +4,4 @@ build/**
 resources/models/**
 imgui.ini
 myeasylog.log
+compile_commands.json

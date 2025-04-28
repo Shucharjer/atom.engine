@@ -26,8 +26,11 @@ struct Mesh {
     atom::vector<uint32_t> indices;
     atom::vector<Material> materials;
 
-    Mesh() = default;
+    Mesh()                       = default;
+    Mesh(const Mesh&)            = delete;
+    Mesh& operator=(const Mesh&) = delete;
     Mesh(Mesh&&) noexcept;
+    Mesh& operator=(Mesh&&) noexcept;
 
     void draw(const ShaderProgram& program) const noexcept;
 };

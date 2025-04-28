@@ -79,6 +79,7 @@ public:
 
     void use() const noexcept;
 
+    void setInt(const std::string& name, int val) const;
     void setFloat(const std::string& name, float val) const;
     void setVec3(const std::string& name, const math::Vector3& vec) const;
     void setVec3(const std::string& name, float x, float y, float z) const;

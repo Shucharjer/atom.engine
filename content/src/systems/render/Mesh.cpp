@@ -12,18 +12,34 @@ Mesh::Mesh(Mesh&& that) noexcept
       vbo(std::move(that.vbo)), vertices(std::move(that.vertices)),
       indices(std::move(that.indices)), materials(std::move(that.materials)) {}
 
-static void TryActiveTexture(
+Mesh& Mesh::operator=(Mesh&& that) noexcept {
+    if (this != &that) {
+        visibility = that.visibility;
+        culling    = that.culling;
+        vao        = std::move(that.vao);
+        vbo        = std::move(that.vbo);
+        vertices   = std::move(that.vertices);
+        indices    = std::move(that.indices);
+        materials  = std::move(that.materials);
+    }
+    return *this;
+}
+
+static inline void TryActiveTexture(
     hub& hub,
     library<Texture>& library,
     const ShaderProgram& program,
     const Texture& texture,
+    const char* textureType,
     uint16_t& i
 ) {
     if (texture) {
         auto handle = texture.get_handle();
         auto proxy  = library.fetch(handle);
-        glActiveTexture(GL_TEXTURE0 + i++);
+        glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, proxy->m_Id);
+        program.setInt(textureType, i);
+        ++i;
     }
 }
 
@@ -34,12 +50,50 @@ void Mesh::draw(const ShaderProgram& program) const noexcept {
     if (!materials.empty()) {
         auto& material = materials[0];
         uint16_t i     = 0;
-        TryActiveTexture(hub, library, program, material.baseColorTexture, i);
-        TryActiveTexture(hub, library, program, material.ambientTexture, i);
+        TryActiveTexture(
+            hub, library, program, material.baseColorTexture, "material.baseColorTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.ambientTexture, "material.ambientTexture", i
+        );
+
+        TryActiveTexture(
+            hub, library, program, material.diffuseTexture, "material.diffuseTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.specularTexture, "material.specularTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.emissiveTexture, "material.emissiveTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.metallicTexture, "material.metallicTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.roughnessTexture, "material.roughnessTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.occlusionTexture, "material.occlusionTexture", i
+        );
+        TryActiveTexture(
+            hub, library, program, material.normalTexture, "material.normalTexture", i
+        );
+        program.setVec3(
+            "material.baseColorFactor",
+            material.baseColorFactor.x,
+            material.baseColorFactor.y,
+            material.baseColorFactor.z
+        );
+        program.setFloat("material.metallicFactor", material.metallicFactor);
+        program.setFloat("material.roughnessFactor", material.roughnessFactor);
+        program.setFloat("material.ambientFactor", material.ambientFactor);
+        program.setVec3("material.emissiveFactor", material.emissiveFactor);
+        program.setVec3("material.ambientLight", material.ambientLight);
     }
 
     vao.bind();
-    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+    // glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
     vao.unbind();
     glActiveTexture(0);
 }

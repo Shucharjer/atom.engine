@@ -31,7 +31,6 @@ public:
         math::Mat4 boneMatrix;
 
         atom::vector<Mesh> meshes;
-        atom::vector<Material> materials;
         atom::vector<Animation> animations;
     };
 
@@ -47,6 +46,8 @@ public:
     void set_handle(const resource_handle handle) noexcept { m_Handle = handle; }
 
     REFL_MEMBERS(Model, m_Path)
+
+    void draw(library<Model>& library, ShaderProgram& program);
 
 private:
     resource_handle m_Handle;

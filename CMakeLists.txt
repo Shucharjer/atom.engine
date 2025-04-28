@@ -56,6 +56,10 @@ target_link_libraries(Engine PUBLIC Atom::Ecs)
 
 # thridparty
 
+if (WIN32)
+    set(CMAKE_MSVC_RUNTIMEI_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 find_package(imgui CONFIG REQUIRED)
 find_package(lunasvg CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
@@ -72,6 +76,7 @@ find_package(tinyfiledialogs CONFIG REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(easyloggingpp easyloggingpp REQUIRED IMPORTED_TARGET)
 find_package(assimp CONFIG REQUIRED)
+find_package(SndFile CONFIG REQUIRED)
 
 set(THIRDPARTY_DIR "${Engine_SOURCE_DIR}/thirdparty")
 
@@ -95,6 +100,7 @@ target_link_libraries(Engine PUBLIC
     assimp::assimp
     ${BULLET_LIBRARIES}
     Bullet3Dynamics
+    SndFile::sndfile
 )
 
 add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP)
@@ -191,7 +197,8 @@ if (BUILD_ENGINE_DOCS)
             GIT_SHALLOW 1
         )
 
-        FetchContent_GetProperties(doxygen-awesome-css)
+        FetchContent_MakeAvailable(doxygen-awesome-css)
+        FetchContent_GetProperties(doxygen-awesome-css SOURCE_DIR DOXY_CSS_DIRECTORY)
 
         if(NOT doxygen-awesome-css_POPULATED)
             FetchContent_Populate(doxygen-awesome-css)
@@ -199,15 +206,14 @@ if (BUILD_ENGINE_DOCS)
         endif()
 
         set(DOXY_SOURCE_DIRECTORY ${Engine_DOXY_DIR})
-        set(DOXY_OUTPUT_DIRECTROY ${CMAKE_CURRENT_BINARY_DIR}/docs)
-        set(DOXY_CSS_DIRECTROY ${doxygen-awesome-css_INCLUDE_DIR})
+        set(DOXY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/docs)
 
         configure_file(doxy.in doxy.cfg @ONLY)
 
         add_custom_target(
             documents
             COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doxy.cfg
-            WORKING_DIRECTORY ${Utils_SOURCE_DIR}
+            WORKING_DIRECTORY ${Engine_SOURCE_DIR}
             VERBATIM
         )
 

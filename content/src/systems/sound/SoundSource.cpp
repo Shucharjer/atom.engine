@@ -49,33 +49,21 @@ math::Vector3 SoundSource::getPosition() const noexcept {
     return position;
 }
 
-void SoundSource::setOrientation(const float* orientation) const noexcept {
-    alSourcefv(m_Source, AL_ORIENTATION, orientation);
+void SoundSource::setDirection(const float* direction) const noexcept {
+    alSourcefv(m_Source, AL_DIRECTION, direction);
 }
 
-void SoundSource::setOrientation(
-    const float forwardX,
-    const float forwardY,
-    const float forwardZ,
-    const float upX,
-    const float upY,
-    const float upZ
+void SoundSource::setDirection(
+    const float x, const float y, const float z
 
 ) const noexcept {
-    const float orientation[] = { forwardX, forwardY, forwardZ, upX, upY, upZ };
-    alSourcefv(m_Source, AL_ORIENTATION, static_cast<const float*>(orientation));
+    const float temp[] = { x, y, z };
+    alSourcefv(m_Source, AL_ORIENTATION, static_cast<const float*>(temp));
 }
 
-void SoundSource::setOrientation(const math::Vector3& direction, const math::Vector3& up)
-    const noexcept {
-    const float orientation[] = { direction.x, direction.y, direction.z, up.x, up.y, up.z };
-    alSourcefv(m_Source, AL_ORIENTATION, static_cast<const float*>(orientation));
-}
-
-std::pair<math::Vector3, math::Vector3> SoundSource::getOrientation() const noexcept {
-    std::pair<math::Vector3, math::Vector3> ori;
-    alGetSourcefv(m_Source, AL_ORIENTATION, reinterpret_cast<float*>(&ori));
-    return ori;
+void SoundSource::setDirection(const math::Vector3& direction) const noexcept {
+    const float temp[] = { direction.x, direction.y, direction.z };
+    alSourcefv(m_Source, AL_ORIENTATION, static_cast<const float*>(temp));
 }
 
 void SoundSource::bufferData(ecs::resource_handle buffer) noexcept {

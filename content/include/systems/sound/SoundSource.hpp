@@ -69,24 +69,9 @@ public:
      */
     void setPosition(const math::Vector3& position) noexcept;
 
-    void setOrientation(const float* orientation) const noexcept;
-    void setOrientation(
-        const float forwardX,
-        const float forwardY,
-        const float forwardZ,
-        const float upX = 0.f,
-        const float upY = 1.f,
-        const float upZ = 0.f
-    ) const noexcept;
-    void setOrientation(const math::Vector3& forward, const math::Vector3& up = { 0.f, 1.f, 0.f })
-        const noexcept;
-
-    /**
-     * @brief Get the Orientation of this source.
-     *
-     * @return std::pair<math::Vector3, math::Vector3>
-     */
-    [[nodiscard]] std::pair<math::Vector3, math::Vector3> getOrientation() const noexcept;
+    void setDirection(const float x, const float y, const float z) const noexcept;
+    void setDirection(const math::Vector3& direction) const noexcept;
+    void setDirection(const float* direction) const noexcept;
 
     void bufferData(ecs::resource_handle buffer) noexcept;
 

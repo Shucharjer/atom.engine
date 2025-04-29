@@ -1,7 +1,6 @@
 #pragma once
-#include "pch.hpp"
-
+#include "systems/render/Transform.hpp"
 
 namespace components {
-
+using Transform = atom::engine::systems::render::Transform;
 } // namespace components

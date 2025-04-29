@@ -19,4 +19,4 @@ void ShutdownPhysicsSystem(::atom::ecs::command&, ::atom::ecs::queryer&);
 void ShutdownSoundSystem(::atom::ecs::command&, ::atom::ecs::queryer&);
 void ShutdownScriptSystem(::atom::ecs::command&, ::atom::ecs::queryer&);
 
-} // namespace systems
+} // namespace atom::engine::systems

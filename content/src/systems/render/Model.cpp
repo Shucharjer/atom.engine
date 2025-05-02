@@ -264,10 +264,10 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
             );
         }
 
-        loading_mesh.materials.emplace_back(loading_material);
+        loading_mesh.materials.emplace_back(std::move(loading_material));
     }
 
-    return std::move(loading_mesh);
+    return loading_mesh;
 }
 
 ATOM_RELEASE_INLINE static void ProcessNodes(
@@ -346,6 +346,21 @@ void Model::reload(const key_type& key, const resource_handle handle) {
 
     m_Path   = key;
     m_Handle = handle;
+}
+
+void Model::draw(library<Model>& library, ShaderProgram& program) {
+    auto proxy = library.fetch(m_Handle);
+
+    if (!proxy->visibility) {
+        return;
+    }
+
+    auto& meshes = proxy->meshes;
+    for (auto& mesh : meshes) {
+        if (mesh.visibility) {
+            mesh.draw(program);
+        }
+    }
 }
 
 } // namespace atom::engine::systems::render

@@ -70,7 +70,7 @@ Shader::Shader(const fs::path& path, const ShaderType type) {
     // TODO: verify shader type
 
     if (!Exists(path)) [[unlikely]] {
-        LOG(INFO) << ShaderTypeString(type) << "does not exist, path: {" << path << "}";
+        LOG(INFO) << ShaderTypeString(type) << " does not exist, path: {" << path << "}";
         return;
     }
 
@@ -212,7 +212,7 @@ void ShaderProgram::setVec3(const std::string& name, float x, float y, float z) 
 }
 
 void ShaderProgram::setMat4(const std::string& name, const math::Mat4& mat) const {
-    glUniform4fv(UniformLocation(m_Program, name), 1, glm::value_ptr(mat));
+    glUniformMatrix4fv(UniformLocation(m_Program, name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 bool ShaderProgram::SaveAsBinary(const std::filesystem::path& path) const {

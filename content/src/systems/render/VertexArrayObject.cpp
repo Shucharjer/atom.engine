@@ -14,7 +14,7 @@ VertexArrayObject::VertexArrayObject(VertexArrayObject&& that) noexcept
 VertexArrayObject& VertexArrayObject::operator=(VertexArrayObject&& that) noexcept {
     if (this != &that) {
         VertexArrayObject temp(std::move(that));
-        std::swap(m_Id, that.m_Id);
+        std::swap(m_Id, temp.m_Id);
     }
     return *this;
 }

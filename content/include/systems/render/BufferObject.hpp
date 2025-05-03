@@ -75,10 +75,10 @@ template <typename Buffer>
 BufferObject<Buffer>& BufferObject<Buffer>::operator=(BufferObject&& that) noexcept {
     if (this != &that) [[likely]] {
         BufferObject<Buffer> temp(std::move(that));
-        std::swap(m_Id, that.m_Id);
-        std::swap(m_Size, that.m_Size);
-        std::swap(m_Usage, that.m_Usage);
-        std::swap(m_CurrentBinding, that.m_CurrentBinding);
+        std::swap(m_Id, temp.m_Id);
+        std::swap(m_Size, temp.m_Size);
+        std::swap(m_Usage, temp.m_Usage);
+        std::swap(m_CurrentBinding, temp.m_CurrentBinding);
     }
 
     return *this;

@@ -94,9 +94,10 @@ const auto ResourceFolder = CurrentPath / "resources";
 const auto ModelsFolder   = ResourceFolder / "models";
 const auto LoraPath       = ModelsFolder.string() + sep + "诺菈_by_幻塔" + sep + "诺菈.pmx";
 const auto MikuPath       = ModelsFolder.string() + sep + "miku" + sep + "model.pmx";
+const auto CubePath       = ModelsFolder.string() + sep + "Cube.fbx";
 
-const auto VertShaderPath = ResourceFolder / "shaders" / "test.vert.hlsl";
-const auto FragShaderPath = ResourceFolder / "shaders" / "simplyDisplay.frag.hlsl";
+const auto VertShaderPath = ResourceFolder / "shaders" / "example.vert.glsl";
+const auto FragShaderPath = ResourceFolder / "shaders" / "example.frag.glsl";
 
 auto& hub = hub::instance();
 auto& lib = ::hub.library<Model>();
@@ -113,11 +114,14 @@ static void StartupSys(command& command, queryer& queryer) {
     tab.emplace(model.path(), handle);
 
     gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
+
+    gCamera.position = math::Vector3(0.0F, 0.0F, -5.0F);
 }
 
 static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     const auto view = gCamera.view();
     const auto proj = gCamera.proj();
+    gShaderProgram->use();
     gShaderProgram->setMat4("view", view);
     gShaderProgram->setMat4("proj", proj);
     gShaderProgram->setVec3("viewPos", gCamera.position);
@@ -133,7 +137,8 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
         auto proxy  = lib.fetch(handle);
         for (const auto& mesh : proxy->meshes) {
             if (mesh.visibility) {
-                gShaderProgram->setMat4("model", modelMatrix);
+                //no scaling? or more?
+                gShaderProgram->setMat4("model", math::Mat4(1.0F));
                 mesh.draw(*gShaderProgram);
             }
         }

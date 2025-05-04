@@ -34,8 +34,6 @@ struct Material {
     Texture normalTexture;
 
     std::string name;
-
-    void active() const noexcept;
 };
 
 } // namespace atom::engine::systems::render

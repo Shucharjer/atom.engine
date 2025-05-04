@@ -5,6 +5,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <queryer.hpp>
 #include <world.hpp>
+#include "Local.hpp"
 #include "application/KeyboardInput.hpp"
 #include "application/Panel.hpp"
 #include "application/Window.hpp"
@@ -18,6 +19,7 @@
 #include "systems/render/ShaderProgram.hpp"
 #include "systems/render/Transform.hpp"
 #include "systems/render/VertexArrayObject.hpp"
+
 
 using namespace atom::ecs;
 using namespace atom::engine;
@@ -105,7 +107,14 @@ auto& tab = ::hub.table<Model>();
 Camera gCamera;
 ShaderProgram* gShaderProgram;
 
+static void ReloadShaderProgram() {
+    delete gShaderProgram;
+    gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
+}
+
 static void StartupSys(command& command, queryer& queryer) {
+    gLocalPlayer = command.spawn<Transform, Camera>();
+
     auto entity = command.spawn<Model, Transform>(LoraPath, Transform{});
     auto& model = queryer.get<Model>(entity);
     auto proxy  = model.load();
@@ -116,9 +125,15 @@ static void StartupSys(command& command, queryer& queryer) {
     gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
 
     gCamera.position = math::Vector3(0.0F, 0.0F, -5.0F);
+
+    auto& keyboard = KeyboardInput::instance();
+    keyboard.setPressCallback(GLFW_KEY_O, &ReloadShaderProgram);
 }
 
 static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
+    auto& transform = queryer.get<Transform>(gLocalPlayer);
+    auto& camera    = queryer.get<Camera>(gLocalPlayer);
+
     const auto view = gCamera.view();
     const auto proj = gCamera.proj();
     gShaderProgram->use();
@@ -126,18 +141,19 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     gShaderProgram->setMat4("proj", proj);
     gShaderProgram->setVec3("viewPos", gCamera.position);
 
+    // gShaderProgram->setMat4("model", math::Mat4(1.0F));
+    // de_mesh->draw(*gShaderProgram);
+
     auto entities = queryer.query_any_of<Model, Transform>();
     for (const auto entity : entities) {
         auto& model            = queryer.get<Model>(entity);
         auto& transform        = queryer.get<Transform>(entity);
-        math::Mat4 modelMatrix = glm::translate(math::Mat4(1.0F), transform.position) *
-                                 glm::toMat4(transform.rotation) *
-                                 glm::scale(math::Mat4(1.0F), transform.scaling);
-        auto handle = model.get_handle();
-        auto proxy  = lib.fetch(handle);
+        math::Mat4 modelMatrix = transform.toMatrix();
+        auto handle            = model.get_handle();
+        auto proxy             = lib.fetch(handle);
         for (const auto& mesh : proxy->meshes) {
             if (mesh.visibility) {
-                //no scaling? or more?
+                // no scaling? or more?
                 gShaderProgram->setMat4("model", math::Mat4(1.0F));
                 mesh.draw(*gShaderProgram);
             }

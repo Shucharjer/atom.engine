@@ -119,7 +119,7 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         loading_mesh.vertices.emplace_back(vertex);
     }
     loading_mesh.vbo.set(loading_mesh.vertices.data());
-    loading_mesh.vao.addAttribute<Vertex>(0, loading_mesh.vbo);
+    loading_mesh.vao.addAttributeForVertices(0, loading_mesh.vbo);
 
     // load indices in this mesh
     for (auto i = 0; i < mesh->mNumFaces; ++i) {

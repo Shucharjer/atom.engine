@@ -10,12 +10,11 @@ using namespace atom::engine::systems::render;
 VertexArrayObject::VertexArrayObject() { glGenVertexArrays(1, &m_Id); }
 
 VertexArrayObject::VertexArrayObject(VertexArrayObject&& that) noexcept
-    : m_Id(std::exchange(m_Id, 0)) {}
+    : m_Id(std::exchange(that.m_Id, 0)) {}
 
 VertexArrayObject& VertexArrayObject::operator=(VertexArrayObject&& that) noexcept {
-    if (this != &that) {
-        VertexArrayObject temp(std::move(that));
-        std::swap(m_Id, temp.m_Id);
+    if (this != &that) [[likely]] {
+        std::swap(m_Id, that.m_Id);
     }
     return *this;
 }

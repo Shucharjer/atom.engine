@@ -1,3 +1,15 @@
+#include <BulletCollision/BroadphaseCollision/btBroadphaseInterface.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
+#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
+#include <BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h>
+#include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
+#include <BulletDynamics/Dynamics/btDynamicsWorld.h>
+#include <BulletDynamics/Dynamics/btRigidBody.h>
+#include <LinearMath/btAlignedObjectArray.h>
+#include <LinearMath/btTransform.h>
+#include <btBulletDynamicsCommon.h>
 #include <easylogging++.h>
 #include <imgui.h>
 #include <command.hpp>
@@ -19,7 +31,6 @@
 #include "systems/render/ShaderProgram.hpp"
 #include "systems/render/Transform.hpp"
 #include "systems/render/VertexArrayObject.hpp"
-
 
 using namespace atom::ecs;
 using namespace atom::engine;
@@ -113,7 +124,7 @@ static void ReloadShaderProgram() {
 }
 
 static void StartupSys(command& command, queryer& queryer) {
-    gLocalPlayer = command.spawn<Transform, Camera>();
+    gLocalPlayer = command.spawn<Transform, Camera>(Transform{}, Camera{});
 
     auto entity = command.spawn<Model, Transform>(LoraPath, Transform{});
     auto& model = queryer.get<Model>(entity);
@@ -140,9 +151,6 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     gShaderProgram->setMat4("view", view);
     gShaderProgram->setMat4("proj", proj);
     gShaderProgram->setVec3("viewPos", gCamera.position);
-
-    // gShaderProgram->setMat4("model", math::Mat4(1.0F));
-    // de_mesh->draw(*gShaderProgram);
 
     auto entities = queryer.query_any_of<Model, Transform>();
     for (const auto entity : entities) {
@@ -171,6 +179,81 @@ static void ShutdownSys(command& command, queryer& queryer) {
     }
 }
 
+static void StartupPhysicsSystem(command& command, queryer& queryer) {
+    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+    command.add<btDefaultCollisionConfiguration*>(collisionConfiguration);
+    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+    command.add<btCollisionDispatcher*>(dispatcher);
+    btBroadphaseInterface* broadphase = new btDbvtBroadphase();
+    command.add<btBroadphaseInterface*>(broadphase);
+    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
+    command.add<btSequentialImpulseConstraintSolver*>(solver);
+    btDiscreteDynamicsWorld* dynamicWorld =
+        new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
+    command.add<btDiscreteDynamicsWorld*>(dynamicWorld);
+    dynamicWorld->setGravity(btVector3(0, -10, 0));
+    command.add<btAlignedObjectArray<btCollisionShape*>>();
+
+    LOG(DEBUG) << "dynamicWorld: " << dynamicWorld;
+}
+
+static void UpdatePhysicsSystem(command& command, queryer& queryer, float deltaTime) {
+    auto** collisionConfiguration = queryer.find<btDefaultCollisionConfiguration*>();
+    auto** dispatcher             = queryer.find<btCollisionDispatcher*>();
+    auto** broadphase             = queryer.find<btBroadphaseInterface*>();
+    auto** solver                 = queryer.find<btSequentialImpulseConstraintSolver*>();
+    auto** dynamicWorld           = queryer.find<btDiscreteDynamicsWorld*>();
+
+    LOG(DEBUG) << "*dynamicWorld: " << *dynamicWorld;
+
+    LOG(DEBUG) << "stepSimulation: " << deltaTime;
+    (*dynamicWorld)->stepSimulation(deltaTime, 10);
+
+    LOG(DEBUG) << "numCollisionObjects: " << (*dynamicWorld)->getNumCollisionObjects();
+    for (auto i = (*dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
+        btCollisionObject* obj = (*dynamicWorld)->getCollisionObjectArray()[i];
+        btRigidBody* body      = btRigidBody::upcast(obj);
+        btTransform trans;
+        if (body && body->getMotionState()) {
+            body->getMotionState()->getWorldTransform(trans);
+        }
+        else {
+            trans = obj->getWorldTransform();
+        }
+    }
+}
+
+static void ShutdownPhysicsSystem(command& command, queryer& queryer) {
+    auto** collisionConfiguration = queryer.find<btDefaultCollisionConfiguration*>();
+    auto** dispatcher             = queryer.find<btCollisionDispatcher*>();
+    auto** broadphase             = queryer.find<btBroadphaseInterface*>();
+    auto** solver                 = queryer.find<btSequentialImpulseConstraintSolver*>();
+    auto** dynamicWorld           = queryer.find<btDiscreteDynamicsWorld*>();
+    auto* collisionShapes         = queryer.find<btAlignedObjectArray<btCollisionShape*>>();
+
+    for (auto i = (*dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
+        btCollisionObject* obj = (*dynamicWorld)->getCollisionObjectArray()[i];
+        btRigidBody* body      = btRigidBody::upcast(obj);
+        if (body && body->getMotionState()) {
+            delete body->getMotionState();
+        }
+        (*dynamicWorld)->removeCollisionObject(obj);
+        delete obj;
+    }
+
+    for (auto i = 0; i < collisionShapes->size(); ++i) {
+        btCollisionShape* shape = (*collisionShapes)[i];
+        (*collisionShapes)[i]   = 0;
+        delete shape;
+    }
+
+    delete *collisionConfiguration;
+    delete *dispatcher;
+    delete *broadphase;
+    delete *solver;
+    delete *dynamicWorld;
+}
+
 class ApplicationWindow : public Window {
 public:
     ApplicationWindow(WindowConfig config) : Window(CheckWindowConfig(std::move(config))) {
@@ -182,6 +265,10 @@ public:
         world->add_startup(StartupSys, atom::ecs::late_main_thread);
         world->add_update(UpdateSys, atom::ecs::late_main_thread);
         world->add_shutdown(ShutdownSys, atom::ecs::late_main_thread);
+
+        // world->add_startup(StartupPhysicsSystem, atom::ecs::late_main_thread);
+        // world->add_update(UpdatePhysicsSystem, atom::ecs::late_main_thread);
+        // world->add_shutdown(ShutdownPhysicsSystem, atom::ecs::late_main_thread);
     }
 
 private:

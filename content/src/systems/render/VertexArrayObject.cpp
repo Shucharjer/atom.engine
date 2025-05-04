@@ -3,6 +3,7 @@
 #include "pchs/graphics.hpp"
 
 #include "systems/render/BufferObject.hpp"
+#include "systems/render/Vertex.hpp"
 
 using namespace atom::engine::systems::render;
 
@@ -42,11 +43,26 @@ void VertexArrayObject::addAttribute(
     glEnableVertexAttribArray(index);
 }
 
-void VertexArrayObject::addAttribute(const GLuint index, VertexBufferObject& vbo) {
+void VertexArrayObject::addAttribute(const GLuint index, VertexBufferObject& vbo, GLint size) {
     glBindVertexArray(m_Id);
     vbo.bind();
-    glVertexAttribPointer(index, (GLint)vbo.size(), GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(index, size, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(index);
+}
+
+void VertexArrayObject::addAttributeForVertices(const GLuint index, VertexBufferObject& vbo) {
+    glBindVertexArray(m_Id);
+    vbo.bind();
+    glVertexAttribPointer(index, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    glEnableVertexAttribArray(index);
+    glVertexAttribPointer(
+        index + 1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, normal)
+    );
+    glEnableVertexAttribArray(index + 1);
+    glVertexAttribPointer(
+        index + 2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, texCoords)
+    );
+    glEnableVertexAttribArray(index + 2);
 }
 
 void VertexArrayObject::bind() const noexcept {

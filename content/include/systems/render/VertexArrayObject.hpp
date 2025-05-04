@@ -35,38 +35,16 @@ public:
         const bool normalized = GL_FALSE
     );
 
-    void addAttribute(const GLuint index, VertexBufferObject& vbo);
+    void addAttribute(const GLuint index, VertexBufferObject& vbo, GLint size);
 
-    template <utils::concepts::aggregate Ty>
-    void addAttribute(const GLuint index, VertexBufferObject& vbo) {
-        constexpr auto count = utils::member_count_of<Ty>();
-        glBindVertexArray(m_Id);
-        vbo.bind();
-        // TODO:
-        const auto& offsets = utils::offset_array_of<Ty>();
-        [&]<std::size_t... Is>(std::index_sequence<Is...>) {
-            (SetSingleAttribute<Is, sizeof(utils::member_type_of_t<Is, Ty>), sizeof(Ty)>(
-                 index, offsets[Is]
-             ),
-             ...);
-        }(std::make_index_sequence<count>());
-    }
+    void addAttributeForVertices(const GLuint index, VertexBufferObject& vbo);
 
     void bind() const noexcept;
     void unbind() const noexcept;
 
 private:
-    template <std::size_t Index, GLint Size, GLsizei Stride>
-    void SetSingleAttribute(GLuint index, std::size_t offset) {
-        const auto currentIndex = index + Index;
-        glVertexAttribPointer(
-            currentIndex, Size, GL_FLOAT, GL_FALSE, Stride, reinterpret_cast<void*>(offset)
-        );
-        glEnableVertexAttribArray(currentIndex);
-    }
-
     template <typename T>
-    constexpr static GLenum GLtype() {
+    consteval static GLenum GLtype() {
         if constexpr (std::is_same_v<T, float>)
             return GL_FLOAT;
         else if constexpr (std::is_same_v<T, int>)
@@ -79,7 +57,5 @@ private:
 
     GLuint m_Id{};
 };
-
-template void VertexArrayObject::addAttribute<Vertex>(GLuint, VertexBufferObject&);
 
 } // namespace atom::engine::systems::render

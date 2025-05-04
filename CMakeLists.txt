@@ -103,8 +103,7 @@ target_link_libraries(Engine PUBLIC
     SndFile::sndfile
 )
 
-add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP)
-add_compile_definitions(ELPP_THREAD_SAFE)
+add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP ELPP_THREAD_SAFE)
 
 option(ATOM_USE_PRECOMPILE_HEADER OFF)
 
@@ -271,10 +270,14 @@ option(BUILD_Engine_TEST OFF)
 if (BUILD_Engine_TEST)
 
     file(GLOB TEST_SRC_FILES
-        ${Engine_SOURCE_DIR}/test/*.cpp
+        ${Engine_SOURCE_DIR}/test/src/*.cpp
     )
 
     add_executable(test ${TEST_SRC_FILES})
+
+    target_include_directories(test PRIVATE
+        $<BUILD_INTERFACE:${Engine_SOURCE_DIR}/test/include>
+    )
 
     target_link_libraries(test PRIVATE
         Atom::Engine

@@ -66,9 +66,9 @@ void SoundSource::setDirection(const math::Vector3& direction) const noexcept {
     alSourcefv(m_Source, AL_ORIENTATION, static_cast<const float*>(temp));
 }
 
-void SoundSource::bufferData(ecs::resource_handle buffer) noexcept {
+void SoundSource::bufferData(ALint buffer) noexcept {
     if (m_Source) [[likely]] {
-        alSourcei(m_Source, AL_BUFFER, static_cast<ALint>(buffer));
+        alSourcei(m_Source, AL_BUFFER, buffer);
     }
 }
 
@@ -90,4 +90,21 @@ void SoundSource::stop() const noexcept {
     }
 }
 
+bool SoundSource::isPlaying() const noexcept {
+    ALint state{};
+    alGetSourcei(m_Source, AL_SOURCE_STATE, &state);
+    return state == AL_PLAYING;
+}
+
+bool SoundSource::isPaused() const noexcept {
+    ALint state{};
+    alGetSourcei(m_Source, AL_SOURCE_STATE, &state);
+    return state == AL_PAUSED;
+}
+
+bool SoundSource::isStopped() const noexcept {
+    ALint state{};
+    alGetSourcei(m_Source, AL_SOURCE_STATE, &state);
+    return state == AL_STOPPED;
+}
 } // namespace atom::engine::systems::sound

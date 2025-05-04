@@ -5,6 +5,8 @@
 
 namespace atom::engine::systems::sound {
 
+SoundListener::SoundListener() {}
+
 void SoundListener::setPosition(const float* position) const noexcept {
     alListenerfv(AL_POSITION, position);
 }
@@ -14,17 +16,15 @@ void SoundListener::setPosition(const math::Vector3& position) const noexcept {
 }
 
 void SoundListener::setPosition(const float x, const float y, const float z) const noexcept {
-    const float temp[] = { x, y, z };
-    alListenerfv(AL_POSITION, static_cast<const float*>(temp));
+    alListener3f(AL_POSITION, x, y, z);
 }
 
 void SoundListener::setOrientation(const float* orientation) const noexcept {
     alListenerfv(AL_ORIENTATION, orientation);
 }
 
-void SoundListener::setOrientation(
-    const math::Vector3& forward, const math::Vector3& up
-) const noexcept {
+void SoundListener::setOrientation(const math::Vector3& forward, const math::Vector3& up)
+    const noexcept {
     const math::Vector3 temp[] = { forward, up };
     alListenerfv(AL_ORIENTATION, reinterpret_cast<const float*>(&temp));
 }

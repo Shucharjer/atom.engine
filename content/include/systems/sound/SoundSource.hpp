@@ -73,11 +73,15 @@ public:
     void setDirection(const math::Vector3& direction) const noexcept;
     void setDirection(const float* direction) const noexcept;
 
-    void bufferData(ecs::resource_handle buffer) noexcept;
+    void bufferData(ALint buffer) noexcept;
 
     void play() const noexcept;
     void pause() const noexcept;
     void stop() const noexcept;
+
+    [[nodiscard]] bool isPlaying() const noexcept;
+    [[nodiscard]] bool isPaused() const noexcept;
+    [[nodiscard]] bool isStopped() const noexcept;
 
 private:
     ALuint m_Source;

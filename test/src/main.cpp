@@ -126,6 +126,7 @@ static void ReloadShaderProgram() {
 
 static void StartupSys(command& command, queryer& queryer) {
     gLocalPlayer = command.spawn<Transform, Camera>(Transform{}, Camera{});
+    gWorld       = queryer.current_world();
 
     auto entity = command.spawn<Model, Transform>(CubePath, Transform{});
     auto& model = queryer.get<Model>(entity);
@@ -145,6 +146,7 @@ static void StartupSys(command& command, queryer& queryer) {
 }
 
 static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
+    gDeltaTime      = deltaTime;
     auto& transform = queryer.get<Transform>(gLocalPlayer);
     auto& camera    = queryer.get<Camera>(gLocalPlayer);
 

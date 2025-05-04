@@ -5,6 +5,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <queryer.hpp>
 #include <world.hpp>
+#include "KeyboardCallback.hpp"
 #include "Local.hpp"
 #include "application/KeyboardInput.hpp"
 #include "application/Panel.hpp"
@@ -113,9 +114,9 @@ static void ReloadShaderProgram() {
 }
 
 static void StartupSys(command& command, queryer& queryer) {
-    gLocalPlayer = command.spawn<Transform, Camera>();
+    gLocalPlayer = command.spawn<Transform, Camera>(Transform{}, Camera{});
 
-    auto entity = command.spawn<Model, Transform>(LoraPath, Transform{});
+    auto entity = command.spawn<Model, Transform>(CubePath, Transform{});
     auto& model = queryer.get<Model>(entity);
     auto proxy  = model.load();
     auto handle = lib.install(std::move(proxy));
@@ -124,10 +125,12 @@ static void StartupSys(command& command, queryer& queryer) {
 
     gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
 
-    gCamera.position = math::Vector3(0.0F, 0.0F, -5.0F);
+    gCamera.position = math::Vector3(0.0F, 4.0F, -13.0F);
 
     auto& keyboard = KeyboardInput::instance();
     keyboard.setPressCallback(GLFW_KEY_O, &ReloadShaderProgram);
+    keyboard.setPressCallback(GLFW_KEY_W, &MoveForward);
+    keyboard.setPressCallback(GLFW_KEY_S, &MoveBackward);
 }
 
 static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
@@ -144,7 +147,7 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     // gShaderProgram->setMat4("model", math::Mat4(1.0F));
     // de_mesh->draw(*gShaderProgram);
 
-    auto entities = queryer.query_any_of<Model, Transform>();
+    auto entities = queryer.query_all_of<Model, Transform>();
     for (const auto entity : entities) {
         auto& model            = queryer.get<Model>(entity);
         auto& transform        = queryer.get<Transform>(entity);

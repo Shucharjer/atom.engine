@@ -1,11 +1,8 @@
 #pragma once
-#include <ranges>
 #include <glad/glad.h>
 #include <concepts/type.hpp>
 #include "BufferObject.hpp"
-#include "reflection.hpp"
 #include "systems/render/BufferObject.hpp"
-#include "systems/render/Vertex.hpp"
 
 namespace atom::engine::systems::render {
 

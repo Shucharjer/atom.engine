@@ -21,7 +21,8 @@ public:
     std::size_t size() const noexcept;
     GLuint get() const noexcept;
     void set(void* const data) noexcept;
-    void bind(const GLuint bindingPoint = 0) noexcept;
+    void bind();
+    void bindBase(const GLuint bindingPoint = 0) noexcept;
     void update(const std::size_t offset, void* const data, const std::size_t size) noexcept;
     void batchUpdate(const std::vector<std::tuple<std::size_t, void*, std::size_t>>& updates
     ) noexcept;
@@ -110,7 +111,12 @@ void BufferObject<Buffer>::set(void* const data) noexcept {
 }
 
 template <typename Buffer>
-void BufferObject<Buffer>::bind(const GLuint bindingPoint) noexcept {
+void BufferObject<Buffer>::bind() {
+    glBindBuffer(buffer_type, m_Id);
+}
+
+template <typename Buffer>
+void BufferObject<Buffer>::bindBase(const GLuint bindingPoint) noexcept {
     glBindBufferBase(buffer_type, bindingPoint, m_Id);
     m_CurrentBinding = bindingPoint;
 }

@@ -64,6 +64,8 @@ void ColorAttachment::resize(GLuint width, GLuint height) {
     }
 }
 
+void ColorAttachment::bind() { glBindTexture(GL_TEXTURE_2D, m_Id); }
+
 Renderbuffer::Renderbuffer() { glGenRenderbuffers(1, &m_Id); }
 
 Renderbuffer::Renderbuffer(GLuint width, GLuint height) : m_Width(width), m_Height(height) {

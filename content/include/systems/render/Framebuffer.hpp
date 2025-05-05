@@ -30,6 +30,8 @@ public:
 
     void resize(GLuint width, GLuint height);
 
+    void bind();
+
 private:
     GLuint m_Id{};
     GLuint m_Width{};

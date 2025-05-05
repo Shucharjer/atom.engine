@@ -56,13 +56,16 @@ ATOM_FORCE_INLINE std::string_view ShaderTypeString(const ShaderType type) {
     }
 }
 
-ATOM_FORCE_INLINE void CheckShaderCompileStatus(uint32_t shader, const ShaderType type) {
+ATOM_FORCE_INLINE void CheckShaderCompileStatus(
+    uint32_t shader, const ShaderType type, const fs::path& path
+) {
     int success = {};
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) [[unlikely]] {
         std::array<GLchar, kBufSize> infoLog{};
         glGetShaderInfoLog(shader, kBufSize, nullptr, infoLog.data());
-        LOG(ERROR) << ShaderTypeString(type) << " compile failed: " << infoLog.data();
+        LOG(ERROR) << ShaderTypeString(type) << " compile failed, position {" << path
+                   << "}: " << infoLog.data();
     }
 }
 
@@ -97,7 +100,7 @@ Shader::Shader(const fs::path& path, const ShaderType type) {
     glShaderSource(m_Shader, 1, &this_source, nullptr);
     glCompileShader(m_Shader);
 
-    CheckShaderCompileStatus(m_Shader, type);
+    CheckShaderCompileStatus(m_Shader, type, path);
 }
 
 Shader::~Shader() { glDeleteShader(m_Shader); }

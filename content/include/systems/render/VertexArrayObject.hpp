@@ -34,6 +34,8 @@ public:
 
     void addAttribute(const GLuint index, VertexBufferObject& vbo, GLint size);
 
+    void addAttributeForVertices2D(const GLuint index, VertexBufferObject& vbo);
+
     void addAttributeForVertices(const GLuint index, VertexBufferObject& vbo);
 
     void bind() const noexcept;

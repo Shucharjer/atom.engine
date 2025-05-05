@@ -49,6 +49,17 @@ void VertexArrayObject::addAttribute(const GLuint index, VertexBufferObject& vbo
     glEnableVertexAttribArray(index);
 }
 
+void VertexArrayObject::addAttributeForVertices2D(const GLuint index, VertexBufferObject& vbo) {
+    glBindVertexArray(m_Id);
+    vbo.bind();
+    glVertexAttribPointer(index, 2, GL_FLOAT, GL_FALSE, sizeof(float) << 2, 0);
+    glEnableVertexAttribArray(index);
+    glVertexAttribPointer(
+        index + 1, 2, GL_FLOAT, GL_FALSE, sizeof(float) << 2, (void*)(sizeof(float) * 2)
+    );
+    glEnableVertexAttribArray(index + 1);
+}
+
 void VertexArrayObject::addAttributeForVertices(const GLuint index, VertexBufferObject& vbo) {
     glBindVertexArray(m_Id);
     vbo.bind();

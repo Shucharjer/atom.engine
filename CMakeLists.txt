@@ -104,6 +104,7 @@ target_link_libraries(Engine PUBLIC
 )
 
 add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP ELPP_THREAD_SAFE)
+target_compile_definitions(Engine PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
 
 option(ATOM_USE_PRECOMPILE_HEADER OFF)
 

@@ -5,7 +5,7 @@ namespace atom::engine::systems::render {
 
 struct Transform {
     math::Vector3 position;
-    math::Quaternion rotation;
+    math::Quaternion rotation{ 1.0F, 0.0F, 0.0F, 0.0F };
     math::Vector3 scaling{ 1.0F, 1.0F, 1.0F };
 
     [[nodiscard]] math::Mat4 toMatrix() const noexcept {

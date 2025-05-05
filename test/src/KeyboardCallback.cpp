@@ -1,31 +1,75 @@
 #include "KeyboardCallback.hpp"
+#include <easylogging++.h>
 #include <command.hpp>
 #include <queryer.hpp>
 #include <world.hpp>
 #include "Local.hpp"
-#include "components/Camera.hpp"
-#include "components/Transform.hpp"
+#include "pchs/math.hpp"
 
 using namespace atom;
 
-const float move_speed = 5.0F;
+const float move_speed     = 5.0F;
+const float rotation_speed = 30.0F;
+
+void printTransform() {
+    auto eulerAngles = gCamera->eulerAngles();
+    const auto view  = gCamera->view();
+    LOG(INFO) << "position = " << gCamera->position.x << "," << gCamera->position.y << ","
+              << gCamera->position.z << "  eulerAngles = " << eulerAngles.x << "," << eulerAngles.y
+              << "," << eulerAngles.z << "\n"
+              << "  forward = " << gCamera->forward.x << "," << gCamera->forward.y << ","
+              << gCamera->forward.z << "  orientation = " << gCamera->orientation.w << ","
+              << gCamera->orientation.x << "," << gCamera->orientation.y << ","
+              << gCamera->orientation.z << "\n";
+}
 
 void MoveForward() {
-    auto command    = gWorld->command();
-    auto querier    = gWorld->query();
-    auto& transform = querier.get<components::Transform>(gLocalPlayer);
-    auto& camera    = querier.get<components::Camera>(gLocalPlayer);
-
-    // TODO: update postion in both camera and transfrom. forward vector could be get in camera.
-    transform.position += camera.forward * gDeltaTime * move_speed;
+    gCamera->position += gCamera->forward * 1 * move_speed;
+    printTransform();
 }
 
 void MoveBackward() {
-    auto command = gWorld->command();
-    auto querier = gWorld->query();
+    gCamera->position -= gCamera->forward * 1 * move_speed;
+    printTransform();
+}
 
-    auto& transform = querier.get<components::Transform>(gLocalPlayer);
-    auto& camera    = querier.get<components::Camera>(gLocalPlayer);
+void MoveLeft() {
+    gCamera->position += gCamera->left * 1 * move_speed;
+    printTransform();
+}
 
-    transform.position -= camera.forward * gDeltaTime * move_speed;
+void MoveRight() {
+    gCamera->position -= gCamera->left * 1 * move_speed;
+    printTransform();
+}
+
+void MoveJump() {
+    gCamera->position += gCamera->up * 1 * move_speed;
+    printTransform();
+}
+
+void MoveDown() {
+    gCamera->position -= gCamera->up * 1 * move_speed;
+    printTransform();
+}
+
+void RotationUp() {
+    gCamera->rotate(rotation_speed, engine::math::Vector3(1, 0, 0));
+    printTransform();
+}
+void RotationDown() {
+    gCamera->rotate(-rotation_speed, engine::math::Vector3(1, 0, 0));
+    printTransform();
+}
+void RotationLeft() {
+    gCamera->rotate(rotation_speed, engine::math::Vector3(0, 1, 0));
+    printTransform();
+}
+void RotationRight() {
+    gCamera->rotate(-rotation_speed, engine::math::Vector3(0, 1, 0));
+    printTransform();
+}
+void RotationX() {
+    gCamera->rotate(rotation_speed, engine::math::Vector3(1, 0, 0));
+    printTransform();
 }

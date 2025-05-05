@@ -13,26 +13,37 @@ constexpr float kDefaultNearPlane = 0.1F;
 constexpr float kDefaultFarPlane  = 1000.F;
 
 struct alignas(magic_16) Camera {
-    math::Vector3 position;
-    math::Quaternion orientation;
-    math::Vector3 forward = math::Vector3(1.0F, 0.0F, 0.0F);
+    math::Vector3 position{};
+    math::Quaternion orientation{ 1.0F, 0.0F, 0.0F, 0.0F };
+    math::Vector3 forward = math::Vector3(0.0F, 0.0F, -1.0F);
     math::Vector3 up      = math::Vector3(0.0F, 1.0F, 0.0F);
+    math::Vector3 left    = math::Vector3(-1.0F, 0.0F, 0.0F);
     float fov             = kDefaultFov;
     float aspect          = kDefaultAspect;
     float nearPlane       = kDefaultNearPlane;
     float farPlane        = kDefaultFarPlane;
 
     [[nodiscard]] math::Mat4 view() const noexcept {
-        return glm::translate(glm::mat4_cast(orientation), position);
+        return glm::lookAt(position, position + forward, up);
+        // return glm::translate(glm::transpose(glm::mat4_cast(-orientation)), -position);
     }
 
     [[nodiscard]] math::Mat4 proj() const noexcept {
         return glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
     }
 
+    [[nodiscard]] math::Vector3 eulerAngles() {
+        return glm::degrees(glm::eulerAngles(orientation));
+    }
+
     void rotate(const float angle, const glm::vec3 axis) noexcept {
         math::Quaternion deltaQuat = glm::angleAxis(glm::radians(angle), axis);
         orientation                = glm::normalize(deltaQuat * orientation);
+
+        // sync direction vectors with the new orientation
+        forward = glm::rotate(orientation, math::Vector3(0.0F, 0.0F, -1.0F));
+        up      = glm::rotate(orientation, math::Vector3(0.0F, 1.0F, 0.0F));
+        left    = glm::normalize(glm::cross(up, forward));
     }
 };
 

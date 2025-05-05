@@ -112,6 +112,7 @@ const auto ResourceFolder  = CurrentPath / "resources";
 const auto ModelsFolder    = ResourceFolder / "models";
 const auto LoraPath        = ModelsFolder.string() + sep + "诺菈_by_幻塔" + sep + "诺菈.pmx";
 const auto MikuPath        = ModelsFolder.string() + sep + "miku" + sep + "model.pmx";
+const auto NanosuitPath    = ModelsFolder.string() + sep + "nanosuit" + sep + "nanosuit.obj";
 const auto CubePath        = ModelsFolder.string() + sep + "Cube.fbx";
 const auto IllustriousPath = ModelsFolder.string() + sep + "illustrious" + sep + "illustrious.pmx";
 
@@ -127,7 +128,7 @@ const auto InverseFragShaderPath    = PostprocessShaderPath / "inverse.frag.glsl
 auto& hub = hub::instance();
 auto& lib = ::hub.library<Model>();
 auto& tab = ::hub.table<Model>();
-Camera gCamera;
+
 ShaderProgram* gShaderProgram;
 ShaderProgram* gCopyShaderProgram;
 ShaderProgram* gInverseShaderProgram;
@@ -171,10 +172,14 @@ const float gScreenVertices[] = {
 };
 
 static void StartupSys(command& command, queryer& queryer) {
-    gLocalPlayer = command.spawn<Transform, Camera>(Transform{}, Camera{});
-    gWorld       = queryer.current_world();
+    gLocalPlayer    = command.spawn<Transform, Camera>(Transform{}, Camera{});
+    auto& camera    = queryer.get<Camera>(gLocalPlayer);
+    camera.position = math::Vector3(0.0F, -4.0F, 13.0F);
+    camera.rotate(0, glm::vec3(0.0F, 1.0F, 0.0F));
+    gWorld  = queryer.current_world();
+    gCamera = &camera;
 
-    auto entity = command.spawn<Model, Transform>(IllustriousPath, Transform{});
+    auto entity = command.spawn<Model, Transform>(NanosuitPath, Transform{});
     auto& model = queryer.get<Model>(entity);
     auto proxy  = model.load();
     auto handle = lib.install(std::move(proxy));
@@ -185,13 +190,22 @@ static void StartupSys(command& command, queryer& queryer) {
     gCopyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, SimplyCopyFragShaderPath);
     gInverseShaderProgram = new ShaderProgram(InverseVertShaderPath, InverseFragShaderPath);
 
-    gCamera.position = math::Vector3(0.0F, -(2 << 2) + -(2 << 2), -(2 << 2) + -(2 << 2));
-
     auto& keyboard = KeyboardInput::instance();
     keyboard.setPressCallback(GLFW_KEY_O, &ReloadShaderProgram);
+    keyboard.setPressCallback(GLFW_KEY_K, &SwitchPostProcessing);
+    // move camera
     keyboard.setPressCallback(GLFW_KEY_W, &MoveForward);
     keyboard.setPressCallback(GLFW_KEY_S, &MoveBackward);
-    keyboard.setPressCallback(GLFW_KEY_K, &SwitchPostProcessing);
+    keyboard.setPressCallback(GLFW_KEY_A, &MoveLeft);
+    keyboard.setPressCallback(GLFW_KEY_D, &MoveRight);
+    keyboard.setPressCallback(GLFW_KEY_SPACE, &MoveJump);
+    keyboard.setPressCallback(GLFW_KEY_LEFT_SHIFT, &MoveDown);
+    // rotation camera
+    keyboard.setPressCallback(GLFW_KEY_UP, &RotationUp);
+    keyboard.setPressCallback(GLFW_KEY_DOWN, &RotationDown);
+    keyboard.setPressCallback(GLFW_KEY_LEFT, &RotationLeft);
+    keyboard.setPressCallback(GLFW_KEY_RIGHT, &RotationRight);
+    keyboard.setPressCallback(GLFW_KEY_X, &RotationX);
 
     gColorAttachment = new ColorAttachment(kDefaultWidth, kDefaultHeight);
     gRenderbuffer    = new Renderbuffer(kDefaultWidth, kDefaultHeight);
@@ -219,18 +233,18 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     auto& transform = queryer.get<Transform>(gLocalPlayer);
     auto& camera    = queryer.get<Camera>(gLocalPlayer);
 
-    const auto view = gCamera.view();
-    const auto proj = gCamera.proj();
-
-    gFramebuffer->bind();
+    const auto view = camera.view();
+    const auto proj = camera.proj();
+    // gFramebuffer->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST | GL_STENCIL_TEST);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_STENCIL_TEST);
     // glEnable(GL_CULL_FACE);
     // glCullFace(GL_BACK);
     gShaderProgram->use();
     gShaderProgram->setMat4("view", view);
     gShaderProgram->setMat4("proj", proj);
-    gShaderProgram->setVec3("viewPos", gCamera.position);
+    gShaderProgram->setVec3("viewPos", camera.position);
 
     auto entities = queryer.query_all_of<Model, Transform>();
     for (const auto entity : entities) {
@@ -251,25 +265,25 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     // glReadPixels(0, 0, 1280, 960, GL_RGBA, GL_UNSIGNED_BYTE, temp.data());
     // stbi_write_png("frame.png", 1280, 960, 4, temp.data(), 0);
 
-    gFramebuffer->unbind();
+    // gFramebuffer->unbind();
 
-    switch (gPostprocess) {
-        using enum Postprocess;
-    case Inverse: {
-        gInverseShaderProgram->use();
-        gInverseShaderProgram->setInt("screenTexture", 0);
-    } break;
-    case None:
-    default: {
-        gCopyShaderProgram->use();
-        gInverseShaderProgram->setInt("screenTexture", 0);
-    } break;
-    }
-    gScreenVAO->bind();
-    gColorAttachment->bind();
-    glDisable(GL_DEPTH_TEST);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glEnable(GL_DEPTH_TEST);
+    // switch (gPostprocess) {
+    //     using enum Postprocess;
+    // case Inverse: {
+    //     gInverseShaderProgram->use();
+    //     gInverseShaderProgram->setInt("screenTexture", 0);
+    // } break;
+    // case None:
+    // default: {
+    //     gCopyShaderProgram->use();
+    //     gInverseShaderProgram->setInt("screenTexture", 0);
+    // } break;
+    // }
+    // gScreenVAO->bind();
+    // gColorAttachment->bind();
+    // glDisable(GL_DEPTH_TEST);
+    // glDrawArrays(GL_TRIANGLES, 0, 6);
+    // glEnable(GL_DEPTH_TEST);
 }
 
 static void ShutdownSys(command& command, queryer& queryer) {

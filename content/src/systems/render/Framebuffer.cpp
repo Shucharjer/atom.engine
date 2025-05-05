@@ -59,6 +59,7 @@ void ColorAttachment::resize(GLuint width, GLuint height) {
     if (m_Buffer) {
         auto& attachments = FramebufferAttorney::attachments(m_Buffer);
         auto index        = attachments.at(m_Id);
+        m_Buffer->bind();
         glFramebufferTexture2D(GL_FRAMEBUFFER, index, GL_TEXTURE_2D, m_Id, 0);
     }
 }
@@ -138,13 +139,9 @@ void Framebuffer::bind() const noexcept { glBindFramebuffer(GL_FRAMEBUFFER, m_Id
 
 void Framebuffer::unbind() const noexcept { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
-GLenum Framebuffer::getStatus() const noexcept {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_Id);
-    return glCheckFramebufferStatus(GL_FRAMEBUFFER);
-}
+GLenum Framebuffer::getStatus() const noexcept { return glCheckFramebufferStatus(GL_FRAMEBUFFER); }
 
 bool Framebuffer::complete() const noexcept {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_Id);
     return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
 

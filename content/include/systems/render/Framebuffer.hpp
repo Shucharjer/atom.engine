@@ -89,13 +89,39 @@ public:
 
     [[nodiscard]] GLuint get() const noexcept;
 
+    /**
+     * @brief Bind this framebuffer as the using one.
+     */
     void bind() const noexcept;
+
+    /**
+     * @brief Unbind the framebuffer, which means binding to the default framebuffer.
+     */
     void unbind() const noexcept;
-    void resize(std::uint32_t width, std::uint32_t height);
+
+    /**
+     * @brief Get the framebuffer status.
+     * @warning You should bind this framebuffer before calling this function.
+     * @return GLenum GL_FRAMEBUFFER_COMPLETE or GL_FRAMEBUFFER_INCOMPLETE_*
+     */
     [[nodiscard]] GLenum getStatus() const noexcept;
+
+    /**
+     * @brief Whether this framebuffer is complete.
+     * @warning You should bind this framebuffer before calling this function.
+     */
     [[nodiscard]] bool complete() const noexcept;
 
+    /**
+     * @brief Attach a color attachment.
+     * @warning You should bind this framebuffer before calling this function.
+     */
     void attachColorAttachment(const ColorAttachment& attachment);
+
+    /**
+     * @brief Attach a renderbuffer as depth & stencil attachment.
+     * @warning You should bind this framebuffer before calling this function.
+     */
     void attachRenderbuffer(const Renderbuffer& rbo);
 
 private:

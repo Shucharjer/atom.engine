@@ -20,7 +20,7 @@ public:
 
     std::size_t size() const noexcept;
     GLuint get() const noexcept;
-    void set(void* const data) noexcept;
+    void set(const void* const data) noexcept;
     void bind();
     void bindBase(const GLuint bindingPoint = 0) noexcept;
     void update(const std::size_t offset, void* const data, const std::size_t size) noexcept;
@@ -104,7 +104,7 @@ std::size_t BufferObject<Buffer>::size() const noexcept {
 }
 
 template <typename Buffer>
-void BufferObject<Buffer>::set(void* const data) noexcept {
+void BufferObject<Buffer>::set(const void* const data) noexcept {
     glBindBuffer(buffer_type, m_Id);
     glBufferData(buffer_type, m_Size, data, m_Usage);
     glBindBuffer(buffer_type, 0);

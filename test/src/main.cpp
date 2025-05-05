@@ -223,9 +223,10 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     const auto proj = gCamera.proj();
 
     gFramebuffer->bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST | GL_STENCIL_TEST);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_BACK);
     gShaderProgram->use();
     gShaderProgram->setMat4("view", view);
     gShaderProgram->setMat4("proj", proj);
@@ -252,8 +253,6 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
 
     gFramebuffer->unbind();
 
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
     switch (gPostprocess) {
         using enum Postprocess;
     case Inverse: {
@@ -303,7 +302,7 @@ static void StartupPhysicsSystem(command& command, queryer& queryer) {
         new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
     command.add<btDiscreteDynamicsWorld*>(dynamicWorld);
     dynamicWorld->setGravity(btVector3(0, -10, 0));
-    command.add<btAlignedObjectArray<btCollisionShape*>>();
+    command.add<btAlignedObjectArray<btCollisionShape*>>(btAlignedObjectArray<btCollisionShape*>{});
 
     LOG(DEBUG) << "dynamicWorld: " << dynamicWorld;
 }

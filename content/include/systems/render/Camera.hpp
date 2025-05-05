@@ -24,8 +24,8 @@ struct alignas(magic_16) Camera {
     float farPlane        = kDefaultFarPlane;
 
     [[nodiscard]] math::Mat4 view() const noexcept {
-        return glm::lookAt(position, position + forward, up);
-        // return glm::translate(glm::transpose(glm::mat4_cast(-orientation)), -position);
+        // return glm::lookAt(position, position + forward, up);
+        return glm::translate(glm::mat4_cast(glm::inverse(orientation)), -position);
     }
 
     [[nodiscard]] math::Mat4 proj() const noexcept {

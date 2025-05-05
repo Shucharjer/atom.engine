@@ -3,18 +3,83 @@
 
 #include <GLFW/glfw3.h>
 #include <containers.hpp>
+#include "pchs/math.hpp"
 
 namespace atom::engine::systems::render {
 
-class Framebuffer {
-public:
-    enum class AttachmentType : std::uint8_t {
-        Color,
-        Depth,
-        Stencil,
-        DepthStencil
-    };
+class Framebuffer;
+struct FramebufferAttorney;
 
+class ColorAttachment {
+    friend Framebuffer;
+
+public:
+    ColorAttachment();
+    ColorAttachment(GLuint width, GLuint height);
+    ColorAttachment(ColorAttachment&&) noexcept;
+    ColorAttachment& operator=(ColorAttachment&&) noexcept;
+    ColorAttachment(const ColorAttachment&)            = delete;
+    ColorAttachment& operator=(const ColorAttachment&) = delete;
+    ~ColorAttachment() noexcept;
+
+    [[nodiscard]] operator bool() const noexcept;
+
+    [[nodiscard]] math::Vector2 size() const noexcept;
+
+    void setSize(GLuint width, GLuint height);
+
+    void resize(GLuint width, GLuint height);
+
+private:
+    GLuint m_Id{};
+    GLuint m_Width{};
+    GLuint m_Height{};
+    Framebuffer* m_Buffer{};
+};
+
+/**
+ * @class Renderbuffer
+ * @brief Renderbuffer Object, RBO, usually used to attach into framebuffer as depth stencil
+ * attachment.
+ *
+ */
+class Renderbuffer {
+    friend Framebuffer;
+
+public:
+    Renderbuffer();
+    Renderbuffer(GLuint width, GLuint height);
+    Renderbuffer(Renderbuffer&&) noexcept;
+    Renderbuffer& operator=(Renderbuffer&&) noexcept;
+    Renderbuffer(const Renderbuffer&)            = delete;
+    Renderbuffer& operator=(const Renderbuffer&) = delete;
+    ~Renderbuffer() noexcept;
+
+    [[nodiscard]] operator bool() const noexcept;
+
+    [[nodiscard]] math::Vector2 size() const noexcept;
+
+    void setSize(GLuint width, GLuint height);
+
+    void resize(GLuint width, GLuint height);
+
+private:
+    GLuint m_Id{};
+    GLuint m_Width{};
+    GLuint m_Height{};
+    Framebuffer* m_Buffer{};
+};
+
+/**
+ * @class Framebuffer
+ * @brief A buffer stored in GPU memory that can be used as a render target.
+ * A complete framebuffer consists of at least one buffer (color, depth or stencil), at least one
+ * color attachment.
+ */
+class Framebuffer {
+    friend FramebufferAttorney;
+
+public:
     Framebuffer();
     Framebuffer(Framebuffer&&) noexcept;
     Framebuffer& operator=(Framebuffer&&) noexcept;
@@ -22,44 +87,24 @@ public:
     Framebuffer& operator=(const Framebuffer&) = delete;
     ~Framebuffer();
 
-    void attach(AttachmentType type, GLenum internalFormat, GLenum format, GLenum dataType);
-    void bind(GLenum target = GL_FRAMEBUFFER) const noexcept;
+    [[nodiscard]] GLuint get() const noexcept;
+
+    void bind() const noexcept;
     void unbind() const noexcept;
     void resize(std::uint32_t width, std::uint32_t height);
-    [[nodiscard]] bool checkStatus() const noexcept;
-    [[nodiscard]] GLuint getColorTexture(const AttachmentType type = AttachmentType::Color) const;
+    [[nodiscard]] GLenum getStatus() const noexcept;
+    [[nodiscard]] bool complete() const noexcept;
 
-    /**
-     * @brief Add texture attachment.
-     *
-     * @param type Type of attachment.
-     * @param internalFormat Internal format, like GL_RGB32F, GL_RGB16F, GL_RGBA...
-     * @param format Format, such as GL_RGB, GL_RGBA
-     * @param dataType Type of data, such as GL_FLOAT or GL_UNSIGNED_BYTE
-     */
-    void addTextureAttachment(
-        const AttachmentType type, GLenum internalFormat, GLenum format, GLenum dataType
-    );
-
-    /**
-     * @brief Add renderbuffer.
-     *
-     * @param type Type of attachment.
-     * @param internalFormat Internal format, such as GL_DEPTH24_STENCIL8
-     */
-    void addRenderbuffer(const AttachmentType type, GLenum internalFormat);
+    void attachColorAttachment(const ColorAttachment& attachment);
+    void attachRenderbuffer(const Renderbuffer& rbo);
 
 private:
-    void attachTexture(GLuint texture, GLenum target, const AttachmentType type);
-    void attachRenderBuffer(GLuint rbo, const AttachmentType type);
-
     GLuint m_Id{};
-    GLuint m_Rbo{};
     std::uint32_t m_Width{};
     std::uint32_t m_Height{};
     std::uint32_t m_Samples{};
     std::uint32_t m_ColorAttachments{};
-    atom::map<AttachmentType, GLuint> m_Textures;
+    atom::map<GLuint, GLuint> m_Attachments;
 };
 
 struct OutputToFramebuffer {

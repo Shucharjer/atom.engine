@@ -79,17 +79,17 @@ ATOM_RELEASE_INLINE static void SetTexture(
     const std::string& path,
     const char* textureType
 ) {
+#ifdef ATOM_SHOW_MATERIAL_LOADING
     LOG(INFO) << "Setting " << textureType << " at {" << path << "}";
+#endif
     Texture tex(path);
     if (!table.contains(path)) {
-        LOG(INFO) << "Texture not exist, creating...";
         auto&& proxy = tex.load();
         auto handle  = library.install(std::move(proxy));
         table.emplace(path, handle);
         tex.set_handle(handle);
     }
     else {
-        LOG(INFO) << "Texture has already existed";
         auto handle = table.at(path);
         tex.set_handle(handle);
     }
@@ -137,7 +137,9 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
 
         const std::string& name = material->GetName().data;
         loading_material.name   = material->GetName().C_Str();
+#ifdef ATOM_SHOW_MATERIAL_LOADING
         LOG(INFO) << "loading material: [" << name << "]...";
+#endif
 
         aiColor3D color3d;
         aiColor4D color4d;

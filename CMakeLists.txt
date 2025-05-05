@@ -103,6 +103,17 @@ target_link_libraries(Engine PUBLIC
     SndFile::sndfile
 )
 
+# options
+option(ATOM_OPT_SINGLE_THREAD OFF)
+option(ATOM_OPT_SHOW_MATERIAL_LOADING OFF)
+
+if (ATOM_OPT_SINGLE_THREAD)
+add_compile_definitions(ATOM_SINGLE_THREAD)
+endif()
+if (ATOM_OPT_SHOW_MATERIAL_LOADING)
+target_compile_definitions(ATOM_SHOW_MATERIAL_LOADING)
+endif()
+
 add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP ELPP_THREAD_SAFE)
 target_compile_definitions(Engine PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
 

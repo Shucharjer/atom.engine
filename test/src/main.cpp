@@ -122,20 +122,21 @@ const auto FragShaderPath           = ShaderPath / "example.frag.glsl";
 const auto PostprocessShaderPath    = ShaderPath / "post";
 const auto SimplyCopyVertShaderPath = PostprocessShaderPath / "copy.vert.glsl";
 const auto SimplyCopyFragShaderPath = PostprocessShaderPath / "copy.frag.glsl";
-const auto InverseVertShaderPath    = PostprocessShaderPath / "inverse.vert.glsl";
 const auto InverseFragShaderPath    = PostprocessShaderPath / "inverse.frag.glsl";
+const auto GreyFragShaderPath       = PostprocessShaderPath / "grey.frag.glsl";
 
 auto& hub = hub::instance();
 auto& lib = ::hub.library<Model>();
 auto& tab = ::hub.table<Model>();
-
 ShaderProgram* gShaderProgram;
 ShaderProgram* gCopyShaderProgram;
 ShaderProgram* gInverseShaderProgram;
+ShaderProgram* gGreyShaderProgram;
 
 enum class Postprocess : uint8_t {
     None,
     Inverse,
+    Grey,
     _reserve
 };
 
@@ -188,7 +189,11 @@ static void StartupSys(command& command, queryer& queryer) {
 
     gShaderProgram        = new ShaderProgram(VertShaderPath, FragShaderPath);
     gCopyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, SimplyCopyFragShaderPath);
-    gInverseShaderProgram = new ShaderProgram(InverseVertShaderPath, InverseFragShaderPath);
+    gInverseShaderProgram = new ShaderProgram(SimplyCopyVertShaderPath, InverseFragShaderPath);
+    gGreyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, GreyFragShaderPath);
+
+    auto& localCamera    = queryer.get<Camera>(gLocalPlayer);
+    localCamera.position = math::Vector3(0.0F, (2 << 2) + (2 << 2), (2 << 2) + (2 << 2));
 
     auto& keyboard = KeyboardInput::instance();
     keyboard.setPressCallback(GLFW_KEY_O, &ReloadShaderProgram);
@@ -301,67 +306,66 @@ static void ShutdownSys(command& command, queryer& queryer) {
     delete gFramebuffer;
     delete gCopyShaderProgram;
     delete gInverseShaderProgram;
+    delete gGreyShaderProgram;
 }
 
 static void StartupPhysicsSystem(command& command, queryer& queryer) {
-    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
-    command.add<btDefaultCollisionConfiguration*>(collisionConfiguration);
-    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
-    command.add<btCollisionDispatcher*>(dispatcher);
-    btBroadphaseInterface* broadphase = new btDbvtBroadphase();
-    command.add<btBroadphaseInterface*>(broadphase);
-    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver();
-    command.add<btSequentialImpulseConstraintSolver*>(solver);
-    btDiscreteDynamicsWorld* dynamicWorld =
-        new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
-    command.add<btDiscreteDynamicsWorld*>(dynamicWorld);
-    dynamicWorld->setGravity(btVector3(0, -10, 0));
-    command.add<btAlignedObjectArray<btCollisionShape*>>(btAlignedObjectArray<btCollisionShape*>{});
-
-    LOG(DEBUG) << "dynamicWorld: " << dynamicWorld;
+    // command.add<btDefaultCollisionConfiguration>();
+    // auto* collisionConfiguration = queryer.find<btDefaultCollisionConfiguration>();
+    // command.add<btCollisionDispatcher>(collisionConfiguration);
+    // auto* dispatcher                  = queryer.find<btCollisionDispatcher>();
+    // btBroadphaseInterface* broadphase = new btDbvtBroadphase();
+    // command.add<btBroadphaseInterface>(broadphase);
+    // command.add<btSequentialImpulseConstraintSolver>();
+    // auto* solver = queryer.find<btSequentialImpulseConstraintSolver>();
+    // command.add<btSequentialImpulseConstraintSolver>(solver);
+    // command.add<btDiscreteDynamicsWorld>(dispatcher, broadphase, solver, collisionConfiguration);
+    // auto* dynamicWorld = queryer.find<btDiscreteDynamicsWorld>();
+    // dynamicWorld->setGravity(btVector3(0, -10, 0));
+    // command.add<btAlignedObjectArray<btCollisionShape*>>(btAlignedObjectArray<btCollisionShape*>{});
 }
 
 static void UpdatePhysicsSystem(command& command, queryer& queryer, float deltaTime) {
-    auto** collisionConfiguration = queryer.find<btDefaultCollisionConfiguration*>();
-    auto** dispatcher             = queryer.find<btCollisionDispatcher*>();
-    auto** broadphase             = queryer.find<btBroadphaseInterface*>();
-    auto** solver                 = queryer.find<btSequentialImpulseConstraintSolver*>();
-    auto** dynamicWorld           = queryer.find<btDiscreteDynamicsWorld*>();
+    // auto* collisionConfiguration = queryer.find<btDefaultCollisionConfiguration>();
+    // auto* dispatcher             = queryer.find<btCollisionDispatcher>();
+    // auto* broadphase             = queryer.find<btBroadphaseInterface>();
+    // auto* solver                 = queryer.find<btSequentialImpulseConstraintSolver>();
+    // auto* dynamicWorld           = queryer.find<btDiscreteDynamicsWorld>();
 
-    LOG(DEBUG) << "*dynamicWorld: " << *dynamicWorld;
+    // LOG(DEBUG) << "*dynamicWorld: " << *dynamicWorld;
 
-    LOG(DEBUG) << "stepSimulation: " << deltaTime;
-    (*dynamicWorld)->stepSimulation(deltaTime, 10);
+    // LOG(DEBUG) << "stepSimulation: " << deltaTime;
+    // (dynamicWorld)->stepSimulation(deltaTime, 10);
 
-    LOG(DEBUG) << "numCollisionObjects: " << (*dynamicWorld)->getNumCollisionObjects();
-    for (auto i = (*dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
-        btCollisionObject* obj = (*dynamicWorld)->getCollisionObjectArray()[i];
-        btRigidBody* body      = btRigidBody::upcast(obj);
-        btTransform trans;
-        if (body && body->getMotionState()) {
-            body->getMotionState()->getWorldTransform(trans);
-        }
-        else {
-            trans = obj->getWorldTransform();
-        }
-    }
+    // LOG(DEBUG) << "numCollisionObjects: " << (dynamicWorld)->getNumCollisionObjects();
+    // for (auto i = (dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
+    //     btCollisionObject* obj = (dynamicWorld)->getCollisionObjectArray()[i];
+    //     btRigidBody* body      = btRigidBody::upcast(obj);
+    //     btTransform trans;
+    //     if (body && body->getMotionState()) {
+    //         body->getMotionState()->getWorldTransform(trans);
+    //     }
+    //     else {
+    //         trans = obj->getWorldTransform();
+    //     }
+    // }
 }
 
 static void ShutdownPhysicsSystem(command& command, queryer& queryer) {
-    auto** collisionConfiguration = queryer.find<btDefaultCollisionConfiguration*>();
-    auto** dispatcher             = queryer.find<btCollisionDispatcher*>();
-    auto** broadphase             = queryer.find<btBroadphaseInterface*>();
-    auto** solver                 = queryer.find<btSequentialImpulseConstraintSolver*>();
-    auto** dynamicWorld           = queryer.find<btDiscreteDynamicsWorld*>();
-    auto* collisionShapes         = queryer.find<btAlignedObjectArray<btCollisionShape*>>();
+    auto* collisionConfiguration = queryer.find<btDefaultCollisionConfiguration>();
+    auto* dispatcher             = queryer.find<btCollisionDispatcher>();
+    auto* broadphase             = queryer.find<btBroadphaseInterface>();
+    auto* solver                 = queryer.find<btSequentialImpulseConstraintSolver>();
+    auto* dynamicWorld           = queryer.find<btDiscreteDynamicsWorld>();
+    auto* collisionShapes        = queryer.find<btAlignedObjectArray<btCollisionShape*>>();
 
-    for (auto i = (*dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
-        btCollisionObject* obj = (*dynamicWorld)->getCollisionObjectArray()[i];
+    for (auto i = (dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
+        btCollisionObject* obj = (dynamicWorld)->getCollisionObjectArray()[i];
         btRigidBody* body      = btRigidBody::upcast(obj);
         if (body && body->getMotionState()) {
             delete body->getMotionState();
         }
-        (*dynamicWorld)->removeCollisionObject(obj);
+        (dynamicWorld)->removeCollisionObject(obj);
         delete obj;
     }
 
@@ -371,11 +375,11 @@ static void ShutdownPhysicsSystem(command& command, queryer& queryer) {
         delete shape;
     }
 
-    delete *collisionConfiguration;
-    delete *dispatcher;
-    delete *broadphase;
-    delete *solver;
-    delete *dynamicWorld;
+    delete collisionConfiguration;
+    delete dispatcher;
+    delete broadphase;
+    delete solver;
+    delete dynamicWorld;
 }
 
 class ApplicationWindow : public Window {

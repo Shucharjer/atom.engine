@@ -27,7 +27,7 @@ public:
     }
 
 private:
-    utils::delegate<void(GLFWwindow* window, double x, double y)> m_Callback;
+    utils::delegate<void(GLFWwindow* window)> m_Callback;
 };
 
 } // namespace atom::engine::application

@@ -4,7 +4,7 @@ namespace atom::engine::application {
 
 void MouseInput::Callback(GLFWwindow* window, double x, double y) {
     auto& instance = MouseInput::instance();
-    instance.m_Callback(window, x, y);
+    instance.m_Callback(window);
 }
 
 } // namespace atom::engine::application

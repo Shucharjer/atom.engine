@@ -11,6 +11,7 @@
 #include <core/langdef.hpp>
 #include <reflection.hpp>
 #include "application/KeyboardInput.hpp"
+#include "application/MouseInput.hpp"
 #include "application/application.hpp"
 #include "io/file.hpp"
 
@@ -175,6 +176,7 @@ int Window::init() {
     glfwSetFramebufferSizeCallback(m_pWindow, GlfwFramebufferCallback);
 
     glfwSetKeyCallback(m_pWindow, &KeyboardInput::Callback);
+    glfwSetCursorPosCallback(m_pWindow, &MouseInput::Callback);
 
     return (LOG(INFO) << "Successfully initialized the basic things of a window"), onInit();
 }

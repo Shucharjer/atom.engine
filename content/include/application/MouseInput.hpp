@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <GLFW/glfw3.h>
 #include <auxiliary/singleton.hpp>
+#include <signal/delegate.hpp>
 
 namespace atom::engine::application {
 
@@ -13,11 +14,20 @@ class MouseInput : public utils::singleton<MouseInput> {
     MouseInput() = default;
 
 public:
-    static void Callback();
+    static void Callback(GLFWwindow* window, double x, double y);
+
+    template <auto Candidate>
+    void bind() noexcept {
+        m_Callback.template bind<Candidate>();
+    }
+
+    template <auto Candidate, typename Ty>
+    void bind(Ty& inst) noexcept {
+        m_Callback.template bind<Candidate>(inst);
+    }
 
 private:
-    void(*m_PressCallback)();
-    void(*m_ReleaseCallback)();
+    utils::delegate<void(GLFWwindow* window, double x, double y)> m_Callback;
 };
 
 } // namespace atom::engine::application

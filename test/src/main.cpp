@@ -22,7 +22,9 @@
 #include <world.hpp>
 #include "KeyboardCallback.hpp"
 #include "Local.hpp"
+#include "MouseCallback.hpp"
 #include "application/KeyboardInput.hpp"
+#include "application/MouseInput.hpp"
 #include "application/Panel.hpp"
 #include "application/Window.hpp"
 #include "asset.hpp"
@@ -62,7 +64,7 @@ public:
         inst.setPressCallback(GLFW_KEY_W, SwitchConsoleVisibility);
     }
 
-    static void SwitchConsoleVisibility() {
+    static void SwitchConsoleVisibility(GLFWwindow*) {
         bool display = pConsole->getDisplay();
         pConsole->setDisplay(!display);
     }
@@ -142,12 +144,12 @@ enum class Postprocess : uint8_t {
 
 Postprocess gPostprocess = Postprocess::None;
 
-static void ReloadShaderProgram() {
+static void ReloadShaderProgram(GLFWwindow*) {
     delete gShaderProgram;
     gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
 }
 
-static void SwitchPostProcessing() {
+static void SwitchPostProcessing(GLFWwindow*) {
     auto postprocessing = static_cast<uint8_t>(gPostprocess) + 1;
     gPostprocess        = static_cast<Postprocess>(postprocessing);
     if (gPostprocess == Postprocess::_reserve) {
@@ -211,6 +213,9 @@ static void StartupSys(command& command, queryer& queryer) {
     keyboard.setPressCallback(GLFW_KEY_LEFT, &RotationLeft);
     keyboard.setPressCallback(GLFW_KEY_RIGHT, &RotationRight);
     keyboard.setPressCallback(GLFW_KEY_X, &RotationX);
+
+    auto& mouse = MouseInput::instance();
+    mouse.bind<&MouseCallback>();
 
     gColorAttachment = new ColorAttachment(kDefaultWidth, kDefaultHeight);
     gRenderbuffer    = new Renderbuffer(kDefaultWidth, kDefaultHeight);

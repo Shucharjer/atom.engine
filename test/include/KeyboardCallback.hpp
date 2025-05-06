@@ -1,15 +1,17 @@
 #pragma once
 
-void MoveForward();
-void MoveBackward();
-void MoveLeft();
-void MoveRight();
-void MoveJump();
-void MoveDown();
+#include <pchs/graphics.hpp>
 
-void RotationUp();
-void RotationDown();
-void RotationLeft();
-void RotationRight();
+void MoveForward(GLFWwindow*);
+void MoveBackward(GLFWwindow*);
+void MoveLeft(GLFWwindow*);
+void MoveRight(GLFWwindow*);
+void MoveJump(GLFWwindow*);
+void MoveDown(GLFWwindow*);
 
-void RotationX();
+void RotationUp(GLFWwindow*);
+void RotationDown(GLFWwindow*);
+void RotationLeft(GLFWwindow*);
+void RotationRight(GLFWwindow*);
+
+void RotationX(GLFWwindow*);

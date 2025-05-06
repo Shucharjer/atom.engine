@@ -23,53 +23,53 @@ void printTransform() {
               << gCamera->orientation.z << "\n";
 }
 
-void MoveForward() {
+void MoveForward(GLFWwindow*) {
     gCamera->position += gCamera->forward * 1 * move_speed;
     printTransform();
 }
 
-void MoveBackward() {
+void MoveBackward(GLFWwindow*) {
     gCamera->position -= gCamera->forward * 1 * move_speed;
     printTransform();
 }
 
-void MoveLeft() {
+void MoveLeft(GLFWwindow*) {
     gCamera->position += gCamera->left * 1 * move_speed;
     printTransform();
 }
 
-void MoveRight() {
+void MoveRight(GLFWwindow*) {
     gCamera->position -= gCamera->left * 1 * move_speed;
     printTransform();
 }
 
-void MoveJump() {
+void MoveJump(GLFWwindow*) {
     gCamera->position += gCamera->up * 1 * move_speed;
     printTransform();
 }
 
-void MoveDown() {
+void MoveDown(GLFWwindow*) {
     gCamera->position -= gCamera->up * 1 * move_speed;
     printTransform();
 }
 
-void RotationUp() {
+void RotationUp(GLFWwindow*) {
     gCamera->rotate(rotation_speed, engine::math::Vector3(1, 0, 0));
     printTransform();
 }
-void RotationDown() {
+void RotationDown(GLFWwindow*) {
     gCamera->rotate(-rotation_speed, engine::math::Vector3(1, 0, 0));
     printTransform();
 }
-void RotationLeft() {
+void RotationLeft(GLFWwindow*) {
     gCamera->rotate(rotation_speed, engine::math::Vector3(0, 1, 0));
     printTransform();
 }
-void RotationRight() {
+void RotationRight(GLFWwindow*) {
     gCamera->rotate(-rotation_speed, engine::math::Vector3(0, 1, 0));
     printTransform();
 }
-void RotationX() {
+void RotationX(GLFWwindow*) {
     gCamera->rotate(rotation_speed, engine::math::Vector3(1, 0, 0));
     printTransform();
 }

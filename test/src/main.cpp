@@ -1,14 +1,19 @@
 #include <BulletCollision/BroadphaseCollision/btBroadphaseInterface.h>
+#include <BulletCollision/BroadphaseCollision/btDbvtBroadphase.h>
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcher.h>
 #include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 #include <BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
 #include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
 #include <BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <LinearMath/btAlignedObjectArray.h>
+#include <LinearMath/btDefaultMotionState.h>
+#include <LinearMath/btQuaternion.h>
 #include <LinearMath/btTransform.h>
+#include <LinearMath/btVector3.h>
 #include <btBulletDynamicsCommon.h>
 #include <easylogging++.h>
 #include <imgui.h>
@@ -29,6 +34,7 @@
 #include "application/Window.hpp"
 #include "asset.hpp"
 #include "io/file.hpp"
+#include "pchs/graphics.hpp"
 #include "pchs/math.hpp"
 #include "platform/path.hpp"
 #include "systems/render/BufferObject.hpp"
@@ -245,7 +251,7 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
 
     const auto view = camera.view();
     const auto proj = camera.proj();
-    // gFramebuffer->bind();
+    gFramebuffer->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -275,25 +281,26 @@ static void UpdateSys(command& command, queryer& queryer, float deltaTime) {
     // glReadPixels(0, 0, 1280, 960, GL_RGBA, GL_UNSIGNED_BYTE, temp.data());
     // stbi_write_png("frame.png", 1280, 960, 4, temp.data(), 0);
 
-    // gFramebuffer->unbind();
+    gFramebuffer->unbind();
 
-    // switch (gPostprocess) {
-    //     using enum Postprocess;
-    // case Inverse: {
-    //     gInverseShaderProgram->use();
-    //     gInverseShaderProgram->setInt("screenTexture", 0);
-    // } break;
-    // case None:
-    // default: {
-    //     gCopyShaderProgram->use();
-    //     gInverseShaderProgram->setInt("screenTexture", 0);
-    // } break;
-    // }
-    // gScreenVAO->bind();
-    // gColorAttachment->bind();
-    // glDisable(GL_DEPTH_TEST);
-    // glDrawArrays(GL_TRIANGLES, 0, 6);
-    // glEnable(GL_DEPTH_TEST);
+    gScreenVAO->bind();
+    glActiveTexture(GL_TEXTURE0);
+    gColorAttachment->bind();
+    switch (gPostprocess) {
+        using enum Postprocess;
+    case Inverse: {
+        gInverseShaderProgram->use();
+        gInverseShaderProgram->setInt("screenTexture", 0);
+    } break;
+    case None:
+    default: {
+        gCopyShaderProgram->use();
+        gInverseShaderProgram->setInt("screenTexture", 0);
+    } break;
+    }
+    glDisable(GL_DEPTH_TEST);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glEnable(GL_DEPTH_TEST);
 }
 
 static void ShutdownSys(command& command, queryer& queryer) {
@@ -315,76 +322,44 @@ static void ShutdownSys(command& command, queryer& queryer) {
 }
 
 static void StartupPhysicsSystem(command& command, queryer& queryer) {
-    // command.add<btDefaultCollisionConfiguration>();
-    // auto* collisionConfiguration = queryer.find<btDefaultCollisionConfiguration>();
-    // command.add<btCollisionDispatcher>(collisionConfiguration);
-    // auto* dispatcher                  = queryer.find<btCollisionDispatcher>();
-    // btBroadphaseInterface* broadphase = new btDbvtBroadphase();
-    // command.add<btBroadphaseInterface>(broadphase);
-    // command.add<btSequentialImpulseConstraintSolver>();
-    // auto* solver = queryer.find<btSequentialImpulseConstraintSolver>();
-    // command.add<btSequentialImpulseConstraintSolver>(solver);
-    // command.add<btDiscreteDynamicsWorld>(dispatcher, broadphase, solver, collisionConfiguration);
-    // auto* dynamicWorld = queryer.find<btDiscreteDynamicsWorld>();
-    // dynamicWorld->setGravity(btVector3(0, -10, 0));
-    // command.add<btAlignedObjectArray<btCollisionShape*>>(btAlignedObjectArray<btCollisionShape*>{});
+    auto* collisionConfiguration      = new btDefaultCollisionConfiguration;
+    auto* dispatcher                  = new btCollisionDispatcher(collisionConfiguration);
+    btBroadphaseInterface* broadphase = new btDbvtBroadphase;
+    auto* solver                      = new btSequentialImpulseConstraintSolver;
+    btDiscreteDynamicsWorld* dynamicsWorld =
+        new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, collisionConfiguration);
+    dynamicsWorld->setGravity(btVector3(0, -9.8, 0));
+
+    btCollisionShape* ground = new btStaticPlaneShape(btVector3(0, 1, 0), 0);
+    btDefaultMotionState* groundMotionState =
+        new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, -1, 0)));
 }
 
-static void UpdatePhysicsSystem(command& command, queryer& queryer, float deltaTime) {
+static void UpdatePhysicsSystem(command& command, queryer& queryer, float deltaTime) {}
+
+static void ShutdownPhysicsSystem(command& command, queryer& queryer) {
     // auto* collisionConfiguration = queryer.find<btDefaultCollisionConfiguration>();
     // auto* dispatcher             = queryer.find<btCollisionDispatcher>();
     // auto* broadphase             = queryer.find<btBroadphaseInterface>();
     // auto* solver                 = queryer.find<btSequentialImpulseConstraintSolver>();
     // auto* dynamicWorld           = queryer.find<btDiscreteDynamicsWorld>();
+    // auto* collisionShapes        = queryer.find<btAlignedObjectArray<btCollisionShape*>>();
 
-    // LOG(DEBUG) << "*dynamicWorld: " << *dynamicWorld;
-
-    // LOG(DEBUG) << "stepSimulation: " << deltaTime;
-    // (dynamicWorld)->stepSimulation(deltaTime, 10);
-
-    // LOG(DEBUG) << "numCollisionObjects: " << (dynamicWorld)->getNumCollisionObjects();
     // for (auto i = (dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
     //     btCollisionObject* obj = (dynamicWorld)->getCollisionObjectArray()[i];
     //     btRigidBody* body      = btRigidBody::upcast(obj);
-    //     btTransform trans;
     //     if (body && body->getMotionState()) {
-    //         body->getMotionState()->getWorldTransform(trans);
+    //         delete body->getMotionState();
     //     }
-    //     else {
-    //         trans = obj->getWorldTransform();
-    //     }
+    //     (dynamicWorld)->removeCollisionObject(obj);
+    //     delete obj;
     // }
-}
 
-static void ShutdownPhysicsSystem(command& command, queryer& queryer) {
-    auto* collisionConfiguration = queryer.find<btDefaultCollisionConfiguration>();
-    auto* dispatcher             = queryer.find<btCollisionDispatcher>();
-    auto* broadphase             = queryer.find<btBroadphaseInterface>();
-    auto* solver                 = queryer.find<btSequentialImpulseConstraintSolver>();
-    auto* dynamicWorld           = queryer.find<btDiscreteDynamicsWorld>();
-    auto* collisionShapes        = queryer.find<btAlignedObjectArray<btCollisionShape*>>();
-
-    for (auto i = (dynamicWorld)->getNumCollisionObjects() - 1; i >= 0; --i) {
-        btCollisionObject* obj = (dynamicWorld)->getCollisionObjectArray()[i];
-        btRigidBody* body      = btRigidBody::upcast(obj);
-        if (body && body->getMotionState()) {
-            delete body->getMotionState();
-        }
-        (dynamicWorld)->removeCollisionObject(obj);
-        delete obj;
-    }
-
-    for (auto i = 0; i < collisionShapes->size(); ++i) {
-        btCollisionShape* shape = (*collisionShapes)[i];
-        (*collisionShapes)[i]   = 0;
-        delete shape;
-    }
-
-    delete collisionConfiguration;
-    delete dispatcher;
-    delete broadphase;
-    delete solver;
-    delete dynamicWorld;
+    // for (auto i = 0; i < collisionShapes->size(); ++i) {
+    //     btCollisionShape* shape = (*collisionShapes)[i];
+    //     (*collisionShapes)[i]   = 0;
+    //     delete shape;
+    // }
 }
 
 class ApplicationWindow : public Window {

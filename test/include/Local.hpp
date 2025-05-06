@@ -7,3 +7,4 @@ inline float gLocalSensitivity = 1.f;
 inline atom::ecs::world* gWorld;
 inline float gDeltaTime;
 inline components::Camera* gCamera;
+inline bool gEnableMouseInput = true;

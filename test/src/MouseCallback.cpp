@@ -3,9 +3,9 @@
 #include "Local.hpp"
 #include "pchs/math.hpp"
 
-bool init = false;
-double lastX;
-double lastY;
+static bool init = false;
+static double lastX;
+static double lastY;
 
 using namespace atom::engine::math;
 
@@ -13,7 +13,11 @@ void MouseCallback(GLFWwindow* window) {
     double x{}, y{};
     glfwGetCursorPos(window, &x, &y);
 
-    if (!init) {
+    if (!gEnableMouseInput) {
+        return;
+    }
+
+    if (!init) [[unlikely]] {
         lastX = x;
         lastY = y;
         init  = true;

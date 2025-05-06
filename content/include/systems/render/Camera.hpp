@@ -6,7 +6,7 @@
 
 namespace atom::engine::systems::render {
 
-constexpr float kDefaultFov       = 70.F;
+constexpr float kDefaultFov       = 30.F;
 constexpr float kDefaultAspect    = 16.0F / 9.0F;
 constexpr float kClassicAspect    = 4.0F / 3.0F;
 constexpr float kDefaultNearPlane = 0.1F;

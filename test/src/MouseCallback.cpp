@@ -1,5 +1,4 @@
 #include "MouseCallback.hpp"
-#include <iostream>
 #include <GLFW/glfw3.h>
 #include "Local.hpp"
 #include "pchs/math.hpp"
@@ -11,7 +10,6 @@ double lastY;
 using namespace atom::engine::math;
 
 void MouseCallback(GLFWwindow* window) {
-    std::cout << "mouse callback\n";
     double x{}, y{};
     glfwGetCursorPos(window, &x, &y);
 

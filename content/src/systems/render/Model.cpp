@@ -113,10 +113,19 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         Vertex vertex{};
         std::memcpy(&vertex.position, &mesh->mVertices[i], size_vector3f);
         std::memcpy(&vertex.normal, &mesh->mNormals[i], size_vector3f);
-        if (mesh->mTextureCoords[0]) {
-            std::memcpy(&vertex.texCoords, &mesh->mTextureCoords[0][i], size_vector2f);
-        }
         loading_mesh.vertices.emplace_back(vertex);
+    }
+    if (mesh->mTextureCoords[0]) {
+        for (auto i = 0; i < mesh->mNumVertices; ++i) {
+            std::memcpy(
+                &loading_mesh.vertices[i].texCoords, &mesh->mTextureCoords[0][i], size_vector2f
+            );
+        }
+    }
+    if (mesh->mTangents) {
+        for (auto i = 0; i < mesh->mNumVertices; ++i) {
+            std::memcpy(&loading_mesh.vertices[i].tangent, &mesh->mTangents[i], size_vector3f);
+        }
     }
     loading_mesh.vbo.set(loading_mesh.vertices.data());
     loading_mesh.vao.addAttributeForVertices(0, loading_mesh.vbo);
@@ -131,7 +140,7 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         }
     }
 
-    if (mesh->mMaterialIndex) {
+    if (mesh->mMaterialIndex) [[likely]] {
         Material loading_material;
         auto* material = scene->mMaterials[mesh->mMaterialIndex];
 
@@ -220,7 +229,7 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
             SetTexture(
                 table,
                 library,
-                loading_material.emissiveTexture,
+                loading_material.emissionTexture,
                 dirconcat + path.C_Str(),
                 NAME_OF_ARG(aiTextureType_EMISSIVE)
             );
@@ -299,7 +308,8 @@ auto Model::load() const -> shared_ptr<Model::Proxy> {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(
         m_Path.c_str(),
-        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_OptimizeMeshes | aiProcess_GenNormals
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_OptimizeMeshes |
+            aiProcess_GenNormals | aiProcess_CalcTangentSpace
     );
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {

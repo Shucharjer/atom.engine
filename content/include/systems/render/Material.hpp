@@ -27,7 +27,7 @@ struct Material {
     Texture ambientTexture;
     Texture diffuseTexture;
     Texture specularTexture;
-    Texture emissiveTexture;
+    Texture emissionTexture;
     Texture metallicTexture;
     Texture roughnessTexture;
     Texture occlusionTexture;

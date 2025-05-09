@@ -64,7 +64,7 @@ void Mesh::draw(const ShaderProgram& program) const noexcept {
             hub, library, program, material.specularTexture, "material.specularTexture", i
         );
         TryActiveTexture(
-            hub, library, program, material.emissiveTexture, "material.emissiveTexture", i
+            hub, library, program, material.emissionTexture, "material.emissionTexture", i
         );
         TryActiveTexture(
             hub, library, program, material.metallicTexture, "material.metallicTexture", i

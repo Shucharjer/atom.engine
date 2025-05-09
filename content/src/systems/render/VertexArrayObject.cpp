@@ -73,6 +73,15 @@ void VertexArrayObject::addAttributeForVertices(const GLuint index, VertexBuffer
         index + 2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, texCoords)
     );
     glEnableVertexAttribArray(index + 2);
+    glVertexAttribPointer(
+        index + 3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, tangent)
+    );
+    glEnableVertexAttribArray(index + 3);
+}
+
+void VertexArrayObject::addAttribute(ElementBufferObject& ebo) {
+    glBindVertexArray(m_Id);
+    ebo.bind();
 }
 
 void VertexArrayObject::bind() const noexcept {

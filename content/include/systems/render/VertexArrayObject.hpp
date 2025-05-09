@@ -38,6 +38,8 @@ public:
 
     void addAttributeForVertices(const GLuint index, VertexBufferObject& vbo);
 
+    void addAttribute(ElementBufferObject& ebo);
+
     void bind() const noexcept;
     void unbind() const noexcept;
 

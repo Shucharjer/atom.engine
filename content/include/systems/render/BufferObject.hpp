@@ -49,11 +49,18 @@ public:
     constexpr static auto buffer_type = GL_UNIFORM_BUFFER;
 };
 
+class BasicElementBufferObject {
+public:
+    constexpr static auto buffer_type = GL_ELEMENT_ARRAY_BUFFER;
+};
+
 extern template class BufferObject<BasicVertexBufferObject>;
 extern template class BufferObject<BasicUniformBufferObject>;
+extern template class BufferObject<BasicElementBufferObject>;
 
 using VertexBufferObject  = BufferObject<BasicVertexBufferObject>;
 using UniformBufferObject = BufferObject<BasicUniformBufferObject>;
+using ElementBufferObject = BufferObject<BasicElementBufferObject>;
 
 template <typename Buffer>
 BufferObject<Buffer>::BufferObject() noexcept : m_Size(), m_Usage() {}

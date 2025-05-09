@@ -83,6 +83,8 @@ public:
     void setFloat(const std::string& name, float val) const;
     void setVec3(const std::string& name, const math::Vector3& vec) const;
     void setVec3(const std::string& name, float x, float y, float z) const;
+    void setVec4(const std::string& name, float x, float y, float z, float w) const;
+    void setVec4(const std::string& name, const math::Vector4& vec) const;
     void setMat4(const std::string& name, const math::Mat4& mat) const;
 
     /**

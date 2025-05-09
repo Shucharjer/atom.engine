@@ -18,7 +18,10 @@ public:
     void setPressCallback(int key, void (*callback)(GLFWwindow*));
     void setReleaseCallback(int key, void (*callback)(GLFWwindow*));
 
+    [[nodiscard]] bool isPressing(int key) noexcept;
+
 private:
+    std::unordered_map<int, bool> m_IsPressing;
     std::unordered_map<int, void (*)(GLFWwindow*)> m_PressCallbacks;
     std::unordered_map<int, void (*)(GLFWwindow*)> m_ReleaseCallbacks;
 };

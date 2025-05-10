@@ -1,5 +1,7 @@
 #include "MouseCallback.hpp"
 #include <GLFW/glfw3.h>
+#include <glm/ext/quaternion_geometric.hpp>
+#include <glm/ext/quaternion_trigonometric.hpp>
 #include "Local.hpp"
 #include "pchs/math.hpp"
 
@@ -24,14 +26,14 @@ void MouseCallback(GLFWwindow* window) {
         return;
     }
 
-    auto offsetX = x - lastX;
-    auto offsetY = y - lastY;
+    float offsetX = lastX - x;
+    float offsetY = y - lastY;
 
     offsetX *= gLocalSensitivity;
     offsetY *= gLocalSensitivity;
 
-    gCamera->rotate(-offsetY, Vector3(1.0f, 0.0f, 0.0f));
-    gCamera->rotate(-offsetX, Vector3(0.0f, 1.0f, 0.0f));
+    gCamera->rotate(offsetY, gCamera->left);
+    gCamera->rotate(offsetX, gCamera->up);
 
     lastX = x;
     lastY = y;

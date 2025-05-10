@@ -1,4 +1,7 @@
 #include "RenderSystem.hpp"
+#include <cmath>
+#include <cstdint>
+#include <numbers>
 #include <command.hpp>
 #include <ecs.hpp>
 #include <queryer.hpp>
@@ -9,12 +12,16 @@
 #include "application/KeyboardInput.hpp"
 #include "application/MouseInput.hpp"
 #include "application/Window.hpp"
+#include "pchs/graphics.hpp"
 #include "pchs/math.hpp"
+#include "systems/render/BufferObject.hpp"
 #include "systems/render/Camera.hpp"
 #include "systems/render/Framebuffer.hpp"
 #include "systems/render/Model.hpp"
 #include "systems/render/ShaderProgram.hpp"
 #include "systems/render/Transform.hpp"
+#include "systems/render/Vertex.hpp"
+#include "systems/render/VertexArrayObject.hpp"
 
 using namespace atom::ecs;
 using namespace atom::engine;
@@ -69,15 +76,89 @@ static void SwitchPostProcessing(GLFWwindow*) {
     }
 }
 
+VertexArrayObject* gSphereVAO;
+VertexBufferObject* gSphereVBO;
+ElementBufferObject* gSphereEBO;
+uint32_t indexCount = 0;
+
+static void createSphere() {
+
+    constexpr auto segments = 64;
+
+    struct Vert {
+        Vector3 position;
+        Vector3 normal;
+        Vector2 texCoords;
+    };
+
+    std::pmr::vector<Vert> vertices;
+
+    for (auto i = 0; i < segments; ++i) {
+        for (auto j = 0; j < segments; ++j) {
+            float x    = (float)i / (float)segments;
+            float y    = (float)j / (float)segments;
+            float xPos = std::cos(x * 2.0f * std::numbers::pi) * std::sin(y * std::numbers::pi);
+            float yPos = std::cos(y * std::numbers::pi);
+            float zPos = std::sin(x * 2.0f * std::numbers::pi) * std::sin(y * std::numbers::pi);
+
+            Vert vertex{};
+            vertex.position  = { xPos, yPos, zPos };
+            vertex.normal    = { xPos, yPos, zPos };
+            vertex.texCoords = { x, y };
+            vertices.emplace_back(vertex);
+        }
+    }
+
+    std::pmr::vector<uint32_t> indices;
+    for (auto i = 0; i < segments; ++i) {
+        for (auto j = 0; j < segments; ++j) {
+            auto fir = i * (segments + 1) + j;
+            auto sec = fir + segments + 1;
+
+            indices.emplace_back(fir);
+            indices.emplace_back(sec);
+            indices.emplace_back(fir + 1);
+        }
+    }
+
+    gSphereVAO = new VertexArrayObject;
+    gSphereVBO = new VertexBufferObject(vertices.size() * sizeof(float) * 8);
+    gSphereEBO = new ElementBufferObject(indices.size() * sizeof(uint32_t));
+    auto vao   = gSphereVAO->get();
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(
+        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, normal)
+    );
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, texCoords)
+    );
+    glEnableVertexAttribArray(2);
+
+    gSphereVAO->bind();
+    gSphereVBO->set(vertices.data());
+}
+
+static void renderSphere() {
+    gSphereVAO->bind();
+    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, nullptr);
+}
+
+static void destroySphere() {
+    delete gSphereEBO;
+    delete gSphereVBO;
+    delete gSphereVAO;
+}
+
 void StartupTestRenderSystem(command& command, queryer& queryer) {
-    gLocalPlayer    = command.spawn<Transform, Camera>(Transform{}, Camera{});
+    command.attach<Transform, Camera>(gLocalPlayer, Transform{}, Camera{});
     auto& camera    = queryer.get<Camera>(gLocalPlayer);
     camera.position = Vector3(0.0F, -4.0F, 13.0F);
     camera.rotate(0, glm::vec3(0.0F, 1.0F, 0.0F));
-    gWorld  = queryer.current_world();
     gCamera = &camera;
 
-    auto entity = command.spawn<Model, Transform>(NanosuitPath, Transform{});
+    auto entity = command.spawn<Model, Transform>(LoraPath, Transform{});
     auto& model = queryer.get<Model>(entity);
     auto proxy  = model.load();
     auto handle = lib.install(std::move(proxy));
@@ -131,6 +212,8 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     gScreenVBO->set(static_cast<const float*>(gScreenVertices));
     gScreenVBO->bind();
     gScreenVAO->addAttributeForVertices2D(0, *gScreenVBO);
+
+    // createSphere();
 }
 
 void UpdateTestRenderSystem(
@@ -145,6 +228,7 @@ void UpdateTestRenderSystem(
     gFramebuffer->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
     glEnable(GL_STENCIL_TEST);
     // glEnable(GL_CULL_FACE);
     // glCullFace(GL_BACK);
@@ -164,6 +248,8 @@ void UpdateTestRenderSystem(
         model.draw(lib, *gShaderProgram);
     }
 
+    // renderSphere();
+
     // NOTE: the coordination starts at the left top corner in opengl, but the screen coordnation
     // starts at the left buttom corner. If you want to get a readable picture, you should reverse
     // these bytes.
@@ -172,6 +258,7 @@ void UpdateTestRenderSystem(
     // glReadPixels(0, 0, 1280, 960, GL_RGBA, GL_UNSIGNED_BYTE, temp.data());
     // stbi_write_png("frame.png", 1280, 960, 4, temp.data(), 0);
 
+    glDisable(GL_BLEND);
     gFramebuffer->unbind();
 
     gScreenVAO->bind();
@@ -210,4 +297,6 @@ void ShutdownTestRenderSystem(command& command, queryer& queryer) {
     delete gCopyShaderProgram;
     delete gInverseShaderProgram;
     delete gGreyShaderProgram;
+
+    // destroySphere();
 }

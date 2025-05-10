@@ -2,6 +2,7 @@ build/**
 .cache/**
 .idea/**
 resources/models/**
+resources/textures/**
 imgui.ini
 myeasylog.log
 compile_commands.json

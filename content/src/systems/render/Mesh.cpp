@@ -78,12 +78,7 @@ void Mesh::draw(const ShaderProgram& program) const noexcept {
         TryActiveTexture(
             hub, library, program, material.normalTexture, "material.normalTexture", i
         );
-        program.setVec3(
-            "material.baseColorFactor",
-            material.baseColorFactor.x,
-            material.baseColorFactor.y,
-            material.baseColorFactor.z
-        );
+        program.setVec4("material.baseColorFactor", material.baseColorFactor);
         program.setFloat("material.metallicFactor", material.metallicFactor);
         program.setFloat("material.roughnessFactor", material.roughnessFactor);
         program.setFloat("material.ambientFactor", material.ambientFactor);

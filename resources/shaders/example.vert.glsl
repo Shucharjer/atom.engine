@@ -7,6 +7,7 @@ layout (location = 3) in vec3 aTangent;
 out vec3 FragPos;
 out vec2 TexCoords;
 out mat3 TBN;
+out vec3 Normal;
 
 uniform mat4 view;
 uniform mat4 proj;
@@ -23,6 +24,7 @@ void main()
 {
     TexCoords = aTexCoords;
     FragPos = vec3(model * vec4(aPos, 1.0));
+    Normal = normalize(vec3(model * vec4(aNormal, 0.0)));
     gl_Position = proj * view * model * vec4(aPos, 1.0);
     TBN = getTBN();
 }

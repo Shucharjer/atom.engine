@@ -2,9 +2,11 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <vector>
 #include <command.hpp>
 #include <ecs.hpp>
 #include <queryer.hpp>
+#include <ranges/to.hpp>
 #include "KeyboardCallback.hpp"
 #include "Local.hpp"
 #include "MouseCallback.hpp"
@@ -17,6 +19,7 @@
 #include "systems/render/BufferObject.hpp"
 #include "systems/render/Camera.hpp"
 #include "systems/render/Framebuffer.hpp"
+#include "systems/render/Light.hpp"
 #include "systems/render/Model.hpp"
 #include "systems/render/ShaderProgram.hpp"
 #include "systems/render/Transform.hpp"
@@ -49,6 +52,8 @@ const float gScreenVertices[] = {
     1.0f,  -1.0f, 1.0f, 0.0f, //
     1.0f,  1.0f,  1.0f, 1.0f  //
 };
+
+const int maxLightCount = 15;
 
 enum class Postprocess : uint8_t {
     None,
@@ -152,27 +157,47 @@ static void destroySphere() {
 }
 
 void StartupTestRenderSystem(command& command, queryer& queryer) {
+
+    // initialize camera
     command.attach<Transform, Camera>(gLocalPlayer, Transform{}, Camera{});
-    auto& camera    = queryer.get<Camera>(gLocalPlayer);
-    camera.position = Vector3(0.0F, -4.0F, 13.0F);
+    auto& camera = queryer.get<Camera>(gLocalPlayer);
     camera.rotate(0, glm::vec3(0.0F, 1.0F, 0.0F));
+    camera.position = Vector3(0.0F, 9.0F, 38.0F);
+    // camera.position = math::Vector3(0.0F, (2 << 2) + (2 << 2), (2 << 2) + (2 << 2));
     gCamera = &camera;
 
-    auto entity = command.spawn<Model, Transform>(LoraPath, Transform{});
+    // create entitys
+    // create model
+    auto entity = command.spawn<Model, Transform>(NanosuitPath, Transform{});
     auto& model = queryer.get<Model>(entity);
     auto proxy  = model.load();
     auto handle = lib.install(std::move(proxy));
     model.set_handle(handle);
     tab.emplace(model.path(), handle);
+    // create lights
+    auto dlEntity = command.spawn<DirectionalLight>();
+    auto& dLight  = queryer.get<DirectionalLight>(dlEntity);
+    dLight.color  = { 1.0F, 1.0F, 0.0F };
 
+    auto pointEntity     = command.spawn<PointLight>();
+    auto& pointLight     = queryer.get<PointLight>(pointEntity);
+    pointLight.color     = { 1.0F, 0.0F, 0.0F };
+    pointLight.position  = { 0.0F, 0.0F, 4.0F };
+    pointLight.intensity = 3.0F;
+
+    auto pointEntity2     = command.spawn<PointLight>();
+    auto& pointLight2     = queryer.get<PointLight>(pointEntity2);
+    pointLight2.position  = { 4.0F, 0.0F, 0.0F };
+    pointLight2.color     = { 0.0F, 0.0F, 1.0F };
+    pointLight2.intensity = 5.0F;
+
+    // initialize shader
     gShaderProgram        = new ShaderProgram(VertShaderPath, FragShaderPath);
     gCopyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, SimplyCopyFragShaderPath);
     gInverseShaderProgram = new ShaderProgram(SimplyCopyVertShaderPath, InverseFragShaderPath);
     gGreyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, GreyFragShaderPath);
 
-    auto& localCamera    = queryer.get<Camera>(gLocalPlayer);
-    localCamera.position = math::Vector3(0.0F, (2 << 2) + (2 << 2), (2 << 2) + (2 << 2));
-
+    // initialize keyboard and mouse input
     auto& keyboard = KeyboardInput::instance();
     keyboard.setPressCallback(GLFW_KEY_O, &ReloadShaderProgram);
     keyboard.setPressCallback(GLFW_KEY_K, &SwitchPostProcessing);
@@ -193,6 +218,7 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     auto& mouse = MouseInput::instance();
     mouse.bind<&MouseCallback>();
 
+    // initialize framebuffer
     gColorAttachment = new ColorAttachment(kDefaultWidth, kDefaultHeight);
     gRenderbuffer    = new Renderbuffer(kDefaultWidth, kDefaultHeight);
     gFramebuffer     = new Framebuffer();
@@ -225,7 +251,7 @@ void UpdateTestRenderSystem(
 
     const auto view = camera.view();
     const auto proj = camera.proj();
-    gFramebuffer->bind();
+    // gFramebuffer->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -236,6 +262,41 @@ void UpdateTestRenderSystem(
     gShaderProgram->setMat4("view", view);
     gShaderProgram->setMat4("proj", proj);
     gShaderProgram->setVec3("viewPos", camera.position);
+
+    // apply light of first directional light
+    auto lights = queryer.query_any_of<DirectionalLight>();
+    if (!lights.empty()) {
+        auto& lightComp = queryer.get<DirectionalLight>(lights.front());
+        gShaderProgram->setVec3("dirLight.direction", lightComp.direction);
+        gShaderProgram->setVec4(
+            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
+        );
+        // rotation the directional light
+        lightComp.rotate(90.0 * gDeltaTime, math::Vector3(0.0F, 1.0F, 0.0F));
+    }
+
+    // apply point lights
+    auto pointLights       = queryer.query_any_of<PointLight>();
+    auto pointLightVectors = atom::utils::ranges::to<std::vector>(pointLights);
+    auto pointLightCount   = pointLightVectors.size();
+    std::string tempStr    = "";
+    pointLightCount        = pointLightCount > maxLightCount ? maxLightCount : pointLightCount;
+    gShaderProgram->setInt("pointLightCount", pointLightCount);
+    for (auto i = 0; i < pointLightCount; ++i) {
+        auto light = queryer.get<PointLight>(pointLightVectors[i]);
+        tempStr    = "pointLights[" + std::to_string(i) + "].position";
+        gShaderProgram->setVec3(tempStr, light.position);
+        tempStr = "pointLights[" + std::to_string(i) + "].color";
+        gShaderProgram->setVec3(tempStr, light.color);
+        tempStr = "pointLights[" + std::to_string(i) + "].intensity";
+        gShaderProgram->setFloat(tempStr, light.intensity);
+        tempStr = "pointLights[" + std::to_string(i) + "].constant";
+        gShaderProgram->setFloat(tempStr, light.constant);
+        tempStr = "pointLights[" + std::to_string(i) + "].linearValue";
+        gShaderProgram->setFloat(tempStr, light.linear);
+        tempStr = "pointLights[" + std::to_string(i) + "].quadratic";
+        gShaderProgram->setFloat(tempStr, light.quadratic);
+    }
 
     auto entities = queryer.query_all_of<Model, Transform>();
     for (const auto entity : entities) {
@@ -258,27 +319,27 @@ void UpdateTestRenderSystem(
     // glReadPixels(0, 0, 1280, 960, GL_RGBA, GL_UNSIGNED_BYTE, temp.data());
     // stbi_write_png("frame.png", 1280, 960, 4, temp.data(), 0);
 
-    glDisable(GL_BLEND);
-    gFramebuffer->unbind();
+    // glDisable(GL_BLEND);
+    // gFramebuffer->unbind();
 
-    gScreenVAO->bind();
-    glActiveTexture(GL_TEXTURE0);
-    gColorAttachment->bind();
-    switch (gPostprocess) {
-        using enum Postprocess;
-    case Inverse: {
-        gInverseShaderProgram->use();
-        gInverseShaderProgram->setInt("screenTexture", 0);
-    } break;
-    case None:
-    default: {
-        gCopyShaderProgram->use();
-        gInverseShaderProgram->setInt("screenTexture", 0);
-    } break;
-    }
-    glDisable(GL_DEPTH_TEST);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glEnable(GL_DEPTH_TEST);
+    // gScreenVAO->bind();
+    // glActiveTexture(GL_TEXTURE0);
+    // gColorAttachment->bind();
+    // switch (gPostprocess) {
+    //     using enum Postprocess;
+    // case Inverse: {
+    //     gInverseShaderProgram->use();
+    //     gInverseShaderProgram->setInt("screenTexture", 0);
+    // } break;
+    // case None:
+    // default: {
+    //     gCopyShaderProgram->use();
+    //     gInverseShaderProgram->setInt("screenTexture", 0);
+    // } break;
+    // }
+    // glDisable(GL_DEPTH_TEST);
+    // glDrawArrays(GL_TRIANGLES, 0, 6);
+    // glEnable(GL_DEPTH_TEST);
 }
 
 void ShutdownTestRenderSystem(command& command, queryer& queryer) {

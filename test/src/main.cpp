@@ -8,27 +8,15 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <queryer.hpp>
 #include <world.hpp>
-#include "KeyboardCallback.hpp"
 #include "Local.hpp"
-#include "MouseCallback.hpp"
 #include "PhysicsSystem.hpp"
 #include "RenderSystem.hpp"
 #include "application/KeyboardInput.hpp"
-#include "application/MouseInput.hpp"
 #include "application/Panel.hpp"
 #include "application/Window.hpp"
 #include "asset.hpp"
-#include "io/file.hpp"
-#include "pchs/graphics.hpp"
-#include "pchs/math.hpp"
 #include "platform/path.hpp"
-#include "systems/render/BufferObject.hpp"
-#include "systems/render/Camera.hpp"
-#include "systems/render/Framebuffer.hpp"
 #include "systems/render/Model.hpp"
-#include "systems/render/ShaderProgram.hpp"
-#include "systems/render/Transform.hpp"
-#include "systems/render/VertexArrayObject.hpp"
 
 using namespace atom::ecs;
 using namespace atom::engine;

@@ -39,7 +39,19 @@ struct alignas(magic_16) Camera {
     void rotate(const float angle, const glm::vec3 axis) noexcept {
         math::Quaternion deltaQuat = glm::angleAxis(glm::radians(angle), axis);
         orientation                = glm::normalize(orientation * deltaQuat);
-
+        updateDirectionVector();
+    }
+    void rotationEulerAngle(math::Vector3 eluerAngle) noexcept {
+        orientation = glm::quat(
+            glm::vec3(
+                glm::radians(eluerAngle[0]),
+                glm::radians(eluerAngle[1]),
+                glm::radians(eluerAngle[2]),
+            )
+        );
+        updateDirectionVector();
+    }
+    void updateDirectionVector() {
         // sync direction vectors with the new orientation
         forward = glm::rotate(orientation, math::Vector3(0.0F, 0.0F, -1.0F));
         up      = glm::rotate(orientation, math::Vector3(0.0F, 1.0F, 0.0F));

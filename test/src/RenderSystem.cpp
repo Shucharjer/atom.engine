@@ -53,6 +53,12 @@ static uint32_t sSphereIndicesCount = 0;
 static ShaderProgram* sSphereShaderProgram;
 static Material sSphereMaterial;
 static Material sMetalSphereMaterial;
+static Material sRubbleSphereMaterial;
+
+static VertexArrayObject* sGroundVAO;
+static VertexBufferObject* sGroundVBO;
+static ShaderProgram* sGroundShaderProgram;
+static Material sGroundMaterial;
 
 static void SwitchMouseInput(GLFWwindow* window) { gEnableMouseInput = !gEnableMouseInput; }
 
@@ -88,6 +94,10 @@ static void ReloadShaderProgram(GLFWwindow*) {
     delete sSphereShaderProgram;
     sSphereShaderProgram = new ShaderProgram(
         "resources/shaders/renderSphere.vert.glsl", "resources/shaders/renderSphere.frag.glsl"
+    );
+    delete sGroundShaderProgram;
+    sGroundShaderProgram = new ShaderProgram(
+        "resources/shaders/ground.vert.glsl", "resources/shaders/ground.frag.glsl"
     );
 }
 
@@ -175,10 +185,10 @@ static void createSphere() {
     auto& hub     = hub::instance();
     auto& library = hub.library<Texture>();
 
-    const std::string matTexFolder   = "resources/materials/wood_planks_grey_4k.gltf/textures/";
-    sSphereMaterial.baseColorTexture = Texture(matTexFolder + "wood_planks_grey_diff_4k.jpg");
-    sSphereMaterial.roughnessTexture = Texture(matTexFolder + "wood_planks_grey_arm_4k.jpg");
-    sSphereMaterial.metallicTexture  = Texture(matTexFolder + "wood_planks_grey_arm_4k.jpg");
+    const std::string matTexFolder   = "resources/materials/wood_planks_grey_1k.gltf/textures/";
+    sSphereMaterial.baseColorTexture = Texture(matTexFolder + "wood_planks_grey_diff_1k.jpg");
+    sSphereMaterial.roughnessTexture = Texture(matTexFolder + "wood_planks_grey_arm_1k.jpg");
+    sSphereMaterial.metallicTexture  = Texture(matTexFolder + "wood_planks_grey_arm_1k.jpg");
 
     resource_handle handle{};
     auto baseColorTexture = sSphereMaterial.baseColorTexture.load();
@@ -193,13 +203,13 @@ static void createSphere() {
     handle               = library.install(metallicTexture);
     sSphereMaterial.metallicTexture.set_handle(handle);
 
-    const std::string metalMatTexFloder = "resources/materials/blue_metal_plate_4k.gltf/textures/";
+    const std::string metalMatTexFolder = "resources/materials/blue_metal_plate_1k.gltf/textures/";
     sMetalSphereMaterial.baseColorTexture =
-        Texture(metalMatTexFloder + "blue_metal_plate_diff_4k.jpg");
+        Texture(metalMatTexFolder + "blue_metal_plate_diff_1k.jpg");
     sMetalSphereMaterial.roughnessTexture =
-        Texture(metalMatTexFloder + "blue_metal_plate_arm_4k.jpg");
+        Texture(metalMatTexFolder + "blue_metal_plate_arm_1k.jpg");
     sMetalSphereMaterial.metallicTexture =
-        Texture(metalMatTexFloder + "blue_metal_plate_arm_4k.jpg");
+        Texture(metalMatTexFolder + "blue_metal_plate_arm_1k.jpg");
 
     baseColorTexture = sMetalSphereMaterial.baseColorTexture.load();
     handle           = library.install(baseColorTexture);
@@ -212,6 +222,23 @@ static void createSphere() {
     metallicTexture = sMetalSphereMaterial.metallicTexture.load();
     handle          = library.install(metallicTexture);
     sMetalSphereMaterial.metallicTexture.set_handle(handle);
+
+    const std::string rubMatTexFolder      = "resources/materials/rubble_1k.gltf/textures/";
+    sRubbleSphereMaterial.baseColorTexture = Texture(rubMatTexFolder + "rubble_diff_1k.jpg");
+    sRubbleSphereMaterial.roughnessTexture = Texture(rubMatTexFolder + "rubble_arm_1k.jpg");
+    sRubbleSphereMaterial.metallicTexture  = Texture(rubMatTexFolder + "rubble_arm_1k.jpg");
+
+    baseColorTexture = sRubbleSphereMaterial.baseColorTexture.load();
+    handle           = library.install(baseColorTexture);
+    sRubbleSphereMaterial.baseColorTexture.set_handle(handle);
+
+    roughnessTexture = sRubbleSphereMaterial.roughnessTexture.load();
+    handle           = library.install(roughnessTexture);
+    sRubbleSphereMaterial.roughnessTexture.set_handle(handle);
+
+    metallicTexture = sRubbleSphereMaterial.metallicTexture.load();
+    handle          = library.install(metallicTexture);
+    sRubbleSphereMaterial.metallicTexture.set_handle(handle);
 }
 
 static void renderSphere() {
@@ -240,6 +267,88 @@ static void destroySphere() {
     library.uninstall(handle);
     handle = sMetalSphereMaterial.metallicTexture.get_handle();
     library.uninstall(handle);
+    handle = sRubbleSphereMaterial.baseColorTexture.get_handle();
+    library.uninstall(handle);
+    handle = sRubbleSphereMaterial.roughnessTexture.get_handle();
+    library.uninstall(handle);
+    handle = sRubbleSphereMaterial.metallicTexture.get_handle();
+    library.uninstall(handle);
+}
+
+static void createGround() {
+    sGroundShaderProgram = new ShaderProgram(
+        "resources/shaders/ground.vert.glsl", "resources/shaders/ground.frag.glsl"
+    );
+
+    struct Vert {
+        math::Vector3 position;
+        math::Vector3 normal;
+        math::Vector2 texCoords;
+    };
+
+    const Vert groundVertices[] = {
+        Vert{  { -1000.f, 0.f, 1000.f }, { 0.f, 1.f, 0.f }, { 0.f, 1.f } }, // 左上
+        Vert{  { 1000.f, 0.f, -1000.f }, { 0.f, 1.f, 0.f }, { 1.f, 0.f } }, // 右下
+        Vert{ { -1000.f, 0.f, -1000.f }, { 0.f, 1.f, 0.f }, { 0.f, 0.f } }, // 左下
+
+        Vert{  { -1000.f, 0.f, 1000.f }, { 0.f, 1.f, 0.f }, { 0.f, 1.f } }, // 左上
+        Vert{   { 1000.f, 0.f, 1000.f }, { 0.f, 1.f, 0.f }, { 1.f, 1.f } }, // 右上
+        Vert{  { 1000.f, 0.f, -1000.f }, { 0.f, 1.f, 0.f }, { 1.f, 0.f } }  // 右下
+    };
+
+    sGroundVAO = new VertexArrayObject;
+    sGroundVBO = new VertexBufferObject(sizeof(groundVertices));
+    sGroundVAO->bind();
+    sGroundVBO->set(static_cast<const Vert*>(groundVertices));
+    sGroundVBO->bind();
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vert), 0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, normal));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, texCoords)
+    );
+    glEnableVertexAttribArray(2);
+
+    auto& hub     = hub::instance();
+    auto& library = hub.library<Texture>();
+
+    const std::string matTexFolder   = "resources/materials/laminate_floor_02_4k.gltf/textures/";
+    sGroundMaterial.baseColorTexture = Texture(matTexFolder + "laminate_floor_02_diff_4k.jpg");
+    sGroundMaterial.roughnessTexture = Texture(matTexFolder + "laminate_floor_02_rough_4k.jpg");
+    sGroundMaterial.normalTexture    = Texture(matTexFolder + "laminate_floor_02_nor_gl_4k.jpg");
+
+    resource_handle handle{};
+    auto baseColorTexture = sGroundMaterial.baseColorTexture.load();
+    handle                = library.install(baseColorTexture);
+    sGroundMaterial.baseColorTexture.set_handle(handle);
+
+    auto roughnessTexture = sGroundMaterial.roughnessTexture.load();
+    handle                = library.install(roughnessTexture);
+    sGroundMaterial.roughnessTexture.set_handle(handle);
+
+    auto normalTexture = sGroundMaterial.normalTexture.load();
+    handle             = library.install(normalTexture);
+    sGroundMaterial.normalTexture.set_handle(handle);
+}
+
+static void renderGround() { glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(6)); }
+
+static void destroyGround() {
+    auto& hub     = hub::instance();
+    auto& library = hub.library<Texture>();
+
+    delete sGroundShaderProgram;
+    delete sGroundVAO;
+    delete sGroundVBO;
+
+    resource_handle handle{};
+    handle = sGroundMaterial.baseColorTexture.get_handle();
+    library.uninstall(handle);
+    handle = sGroundMaterial.roughnessTexture.get_handle();
+    library.uninstall(handle);
+    handle = sGroundMaterial.normalTexture.get_handle();
+    library.uninstall(handle);
 }
 
 static CubeMap* pCubeMap;
@@ -251,8 +360,7 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     auto& camera = queryer.get<Camera>(gLocalPlayer);
     camera.rotate(0, glm::vec3(0.0F, 1.0F, 0.0F));
     camera.position = Vector3(0.0F, 9.0F, 38.0F);
-    // camera.position = math::Vector3(0.0F, (2 << 2) + (2 << 2), (2 << 2) + (2 << 2));
-    gCamera = &camera;
+    gCamera         = &camera;
 
     // create entitys
     // create model
@@ -263,9 +371,10 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     model.set_handle(handle);
     tab.emplace(model.path(), handle);
     // create lights
-    auto dlEntity = command.spawn<DirectionalLight>();
-    auto& dLight  = queryer.get<DirectionalLight>(dlEntity);
-    dLight.color  = { 1.0F, 1.0F, 0.0F };
+    auto dlEntity    = command.spawn<DirectionalLight>();
+    auto& dLight     = queryer.get<DirectionalLight>(dlEntity);
+    dLight.color     = { 1.0F, 1.0F, 0.0F };
+    dLight.direction = { 0.8f, -0.6f, 0.f };
 
     auto pointEntity     = command.spawn<PointLight>();
     auto& pointLight     = queryer.get<PointLight>(pointEntity);
@@ -329,9 +438,33 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     sScreenVBO->bind();
     sScreenVAO->addAttributeForVertices2D(0, *sScreenVBO);
 
+    createGround();
     createSphere();
 
     pCubeMap = new CubeMap();
+}
+
+void SetPointLights(ShaderProgram& shaderProgram, auto& pointLights, queryer& queryer) {
+    uint32_t pointLightCount{};
+    std::string tempStr{ magic_32, 0 };
+    for (auto pointLight : pointLights) {
+        auto light = queryer.get<PointLight>(pointLight);
+        tempStr    = "pointLights[" + std::to_string(pointLightCount) + "].position";
+        shaderProgram.setVec3(tempStr, light.position);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].color";
+        shaderProgram.setVec3(tempStr, light.color);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].intensity";
+        shaderProgram.setFloat(tempStr, light.intensity);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].constant";
+        shaderProgram.setFloat(tempStr, light.constant);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].linearValue";
+        shaderProgram.setFloat(tempStr, light.linear);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].quadratic";
+        shaderProgram.setFloat(tempStr, light.quadratic);
+        ++pointLightCount;
+    }
+    pointLightCount = pointLightCount > maxLightCount ? maxLightCount : pointLightCount;
+    shaderProgram.setInt("pointLightCount", pointLightCount);
 }
 
 void UpdateTestRenderSystem(
@@ -370,26 +503,7 @@ void UpdateTestRenderSystem(
 
     // apply point lights
     auto pointLights = queryer.query_any_of<PointLight>();
-    uint32_t pointLightCount{};
-    std::string tempStr{ magic_32, 0 };
-    for (auto pointLight : pointLights) {
-        auto light = queryer.get<PointLight>(pointLight);
-        tempStr    = "pointLights[" + std::to_string(pointLightCount) + "].position";
-        sShaderProgram->setVec3(tempStr, light.position);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].color";
-        sShaderProgram->setVec3(tempStr, light.color);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].intensity";
-        sShaderProgram->setFloat(tempStr, light.intensity);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].constant";
-        sShaderProgram->setFloat(tempStr, light.constant);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].linearValue";
-        sShaderProgram->setFloat(tempStr, light.linear);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].quadratic";
-        sShaderProgram->setFloat(tempStr, light.quadratic);
-        ++pointLightCount;
-    }
-    pointLightCount = pointLightCount > maxLightCount ? maxLightCount : pointLightCount;
-    sShaderProgram->setInt("pointLightCount", pointLightCount);
+    SetPointLights(*sShaderProgram, pointLights, queryer);
 
     auto entities = queryer.query_all_of<Model, Transform>();
     for (const auto entity : entities) {
@@ -416,23 +530,7 @@ void UpdateTestRenderSystem(
         );
     }
 
-    sSphereShaderProgram->setInt("pointLightCount", pointLightCount);
-    auto pointLightIndex = 0;
-    for (auto pointLight : pointLights) {
-        auto light = queryer.get<PointLight>(pointLight);
-        tempStr    = "pointLights[" + std::to_string(pointLightIndex) + "].position";
-        sSphereShaderProgram->setVec3(tempStr, light.position);
-        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].color";
-        sSphereShaderProgram->setVec3(tempStr, light.color);
-        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].intensity";
-        sSphereShaderProgram->setFloat(tempStr, light.intensity);
-        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].constant";
-        sSphereShaderProgram->setFloat(tempStr, light.constant);
-        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].linearValue";
-        sSphereShaderProgram->setFloat(tempStr, light.linear);
-        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].quadratic";
-        sSphereShaderProgram->setFloat(tempStr, light.quadratic);
-    }
+    SetPointLights(*sSphereShaderProgram, pointLights, queryer);
     sSphereVAO->bind();
     const Mat4 sphereModel = glm::translate(Mat4(1.0), Vector3(0, 8, 10));
     sSphereShaderProgram->setMat4("model", sphereModel);
@@ -443,6 +541,32 @@ void UpdateTestRenderSystem(
     sSphereShaderProgram->setMat4("model", metalSphereModel);
     sMetalSphereMaterial.apply(*sSphereShaderProgram);
     renderSphere();
+
+    auto interactives = queryer.query_all_of<Interactivable, Transform>();
+    for (auto interactive : interactives) {
+        const auto& transform = queryer.get<Transform>(interactive);
+        const auto model      = transform.toMatrix();
+        sSphereShaderProgram->setMat4("model", model);
+        sRubbleSphereMaterial.apply(*sSphereShaderProgram);
+        renderSphere();
+    }
+
+    sGroundShaderProgram->use();
+    sGroundShaderProgram->setMat4("proj", proj);
+    sGroundShaderProgram->setMat4("view", view);
+    sGroundShaderProgram->setVec3("viewPos", camera.position);
+    if (!lights.empty()) {
+        auto& lightComp = queryer.get<DirectionalLight>(lights.front());
+
+        sSphereShaderProgram->setVec3("dirLight.direction", lightComp.direction);
+        sSphereShaderProgram->setVec4(
+            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
+        );
+    }
+    SetPointLights(*sGroundShaderProgram, pointLights, queryer);
+    sGroundVAO->bind();
+    sGroundMaterial.apply(*sGroundShaderProgram);
+    renderGround();
 
     // NOTE: the coordination starts at the left top corner in opengl, but the screen coordnation
     // starts at the left buttom corner. If you want to get a readable picture, you should reverse
@@ -493,4 +617,5 @@ void ShutdownTestRenderSystem(command& command, queryer& queryer) {
     delete sGreyShaderProgram;
 
     destroySphere();
+    destroyGround();
 }

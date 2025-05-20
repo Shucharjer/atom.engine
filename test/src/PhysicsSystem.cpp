@@ -7,6 +7,7 @@
 #include <BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h>
 #include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 #include <BulletCollision/CollisionShapes/btCollisionShape.h>
+#include <BulletCollision/CollisionShapes/btSphereShape.h>
 #include <BulletCollision/CollisionShapes/btStaticPlaneShape.h>
 #include <BulletCollision/NarrowPhaseCollision/btPersistentManifold.h>
 #include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
@@ -33,11 +34,11 @@ static btBroadphaseInterface* broadphase                       = nullptr;
 static btSequentialImpulseConstraintSolver* solver             = nullptr;
 static btDiscreteDynamicsWorld* dynamicsWorld                  = nullptr;
 
-static btCollisionShape* playerShape;
-
-const auto kDefaultGravity = btVector3(0.f, -9.8f, 0.f);
+const auto kDefaultGravity = btVector3(0.f, -10.f, 0.f);
 
 static btAlignedObjectArray<btCollisionShape*> collisionShapes;
+
+static btRigidBody* sRigidBody;
 
 void StartupTestPhysicsSystem(atom::ecs::command& command, atom::ecs::queryer& queryer) {
     collisionConfiguration = new btDefaultCollisionConfiguration;
@@ -58,22 +59,42 @@ void StartupTestPhysicsSystem(atom::ecs::command& command, atom::ecs::queryer& q
     btRigidBody* groundBody = new btRigidBody(groundInfo);
     collisionShapes.push_back(groundShape);
     dynamicsWorld->addRigidBody(groundBody);
+
+    using RConstructionInfo = btRigidBody::btRigidBodyConstructionInfo;
+
+    auto interactives = queryer.query_all_of<Interactivable, components::Transform>();
+
+    for (auto interactive : interactives) {
+        auto& transform               = queryer.get<components::Transform>(interactive);
+        btCollisionShape* sphereShape = new btSphereShape(1.0f);
+        const float sphereMass        = 1.f;
+        btVector3 sphereInertia;
+        sphereShape->calculateLocalInertia(sphereMass, sphereInertia);
+        auto* sphereMotionState = new btDefaultMotionState(btTransform(
+            btQuaternion(0, 0, 0, 1),
+            btVector3(transform.position.x, transform.position.y, transform.position.z)
+        ));
+        RConstructionInfo sphereConstructionInfo{
+            sphereMass, sphereMotionState, sphereShape, sphereInertia
+        };
+        auto* sphereRigidBody = new btRigidBody{ sphereConstructionInfo };
+        sRigidBody            = sphereRigidBody;
+        collisionShapes.push_back(sphereShape);
+        dynamicsWorld->addRigidBody(sphereRigidBody);
+    }
 }
 
-void callback(btDynamicsWorld* world, btScalar timeStep) {
-    btDispatcher* dispatcher = world->getDispatcher();
-    auto numManifolds        = dispatcher->getNumManifolds();
-
-    for (auto i = 0; i < numManifolds; ++i) {
-        btPersistentManifold* manifold = dispatcher->getManifoldByIndexInternal(i);
-
-        if (manifold->getNumContacts() > 0) {
-            const btCollisionObject* objA = manifold->getBody0();
-            const btCollisionObject* objB = manifold->getBody1();
-
-            auto* userPointer = objA->getUserPointer();
-        }
-    }
+static void UpdateTransform(btRigidBody& rigidBody, components::Transform& transform) {
+    auto& btTransform    = rigidBody.getWorldTransform();
+    auto& origin         = btTransform.getOrigin();
+    transform.position.x = origin.x();
+    transform.position.y = origin.y();
+    transform.position.z = origin.z();
+    auto btRot           = btTransform.getRotation();
+    transform.rotation.w = btRot.w();
+    transform.rotation.x = btRot.x();
+    transform.rotation.y = btRot.y();
+    transform.rotation.z = btRot.z();
 }
 
 void UpdateTestPhysicsSystem(
@@ -82,21 +103,18 @@ void UpdateTestPhysicsSystem(
     using namespace components;
     dynamicsWorld->stepSimulation(deltaTime, 10);
 
-    auto entities = queryer.query_all_of<Transform, btRigidBody>();
+    // auto entities = queryer.query_all_of<Transform, btRigidBody>();
 
-    for (auto entity : entities) {
-        auto& body           = queryer.get<btRigidBody>(entity);
-        auto& transform      = queryer.get<Transform>(entity);
-        auto& btTransform    = body.getWorldTransform();
-        auto& origin         = btTransform.getOrigin();
-        transform.position.x = origin.x();
-        transform.position.y = origin.y();
-        transform.position.z = origin.z();
-        auto btRot           = btTransform.getRotation();
-        transform.rotation.w = btRot.w();
-        transform.rotation.x = btRot.x();
-        transform.rotation.y = btRot.y();
-        transform.rotation.z = btRot.z();
+    // for (auto entity : entities) {
+    //     auto& body      = queryer.get<btRigidBody>(entity);
+    //     auto& transform = queryer.get<Transform>(entity);
+    //     UpdateTransform(body, transform);
+    // }
+
+    auto interactives = queryer.query_all_of<Interactivable, Transform>();
+    for (auto interactive : interactives) {
+        auto& transform = queryer.get<Transform>(interactive);
+        UpdateTransform(*sRigidBody, transform);
     }
 }
 

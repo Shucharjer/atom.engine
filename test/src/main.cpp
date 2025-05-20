@@ -33,62 +33,6 @@ ATOM_FORCE_INLINE static WindowConfig CheckWindowConfig(WindowConfig&& config) {
     return config;
 }
 
-class ConsolePanel;
-
-ConsolePanel* pConsole;
-
-class ConsolePanel final : public Panel {
-public:
-    ConsolePanel() : Panel("Console", false, ImGuiWindowFlags_NoSavedSettings) {
-        auto& inst = KeyboardInput::instance();
-        inst.setPressCallback(GLFW_KEY_W, SwitchConsoleVisibility);
-    }
-
-    static void SwitchConsoleVisibility(GLFWwindow*) {
-        bool display = pConsole->getDisplay();
-        pConsole->setDisplay(!display);
-    }
-
-private:
-    void onBegin() override {}
-    void layout(
-        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
-    ) override {}
-};
-
-class MainPanel final : public Panel {
-public:
-    MainPanel()
-        : Panel(
-              "Main",
-              true,
-              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar |
-                  ImGuiWindowFlags_NoResize
-          ) {}
-
-private:
-    void onBegin() override {
-        auto* mainViewport = ImGui::GetWindowViewport();
-        ImGui::SetNextWindowViewport(mainViewport->ID);
-        ImGui::SetNextWindowPos(mainViewport->Pos);
-        ImGui::SetNextWindowSize(mainViewport->Size);
-    }
-
-    void layout(
-        float deltaTime, atom::map<std::string, std::shared_ptr<::atom::ecs::world>>& worlds
-    ) override {
-        constexpr auto kStart = "Start";
-        auto buttonSize       = ImGui::CalcTextSize(kStart);
-        auto& style           = ImGui::GetStyle();
-        buttonSize.x += style.FramePadding.x * 2;
-        buttonSize.y += style.FramePadding.y * 2;
-
-        auto context = ImGui::GetCurrentContext();
-
-        auto windowPos = ImGui::GetWindowPos();
-    }
-};
-
 auto& hub = hub::instance();
 auto& lib = ::hub.library<Model>();
 auto& tab = ::hub.table<Model>();
@@ -118,19 +62,18 @@ class ApplicationWindow : public Window {
 public:
     ApplicationWindow(WindowConfig config) : Window(CheckWindowConfig(std::move(config))) {
         auto& factory = PanelFactory::instance();
-        // emplace("Main", factory.make<MainPanel>());
-        // pConsole = factory.make<ConsolePanel>();
-        // emplace("Console", pConsole);
-        auto world = createWorld("main world");
+        auto world    = createWorld("main world");
         world->add_startup(&CreateLocalPlayer, atom::ecs::early_main_thread);
 
         world->add_startup(StartupTestRenderSystem, atom::ecs::late_main_thread);
         world->add_update(UpdateTestRenderSystem, atom::ecs::late_main_thread);
         world->add_shutdown(ShutdownTestRenderSystem, atom::ecs::late_main_thread);
 
+        world->add_startup(CreateInteractivables, atom::ecs::early_main_thread);
+
         world->add_update(updateFrame);
 
-        world->add_startup(StartupTestPhysicsSystem);
+        world->add_startup(StartupTestPhysicsSystem, atom::ecs::late_main_thread);
         world->add_update(UpdateTestPhysicsSystem);
         world->add_shutdown(ShutdownTestPhysicsSystem);
 

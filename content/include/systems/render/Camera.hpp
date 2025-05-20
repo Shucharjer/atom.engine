@@ -1,6 +1,9 @@
 #pragma once
+#include <easylogging++.h>
 #include <core/langdef.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/quaternion_geometric.hpp>
+#include <glm/geometric.hpp>
 #include <glm/trigonometric.hpp>
 #include "pchs/math.hpp"
 
@@ -32,7 +35,7 @@ struct alignas(magic_16) Camera {
         return glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
     }
 
-    [[nodiscard]] math::Vector3 eulerAngles() {
+    [[nodiscard]] math::Vector3 eulerAngles() const noexcept {
         return glm::degrees(glm::eulerAngles(orientation));
     }
 
@@ -42,20 +45,16 @@ struct alignas(magic_16) Camera {
         updateDirectionVector();
     }
     void rotationEulerAngle(math::Vector3 eluerAngle) noexcept {
-        orientation = glm::quat(
-            glm::vec3(
-                glm::radians(eluerAngle[0]),
-                glm::radians(eluerAngle[1]),
-                glm::radians(eluerAngle[2]),
-            )
-        );
+        orientation = glm::quat(glm::vec3(
+            glm::radians(eluerAngle[0]), glm::radians(eluerAngle[1]), glm::radians(eluerAngle[2]),
+        ));
         updateDirectionVector();
     }
     void updateDirectionVector() {
         // sync direction vectors with the new orientation
-        forward = glm::rotate(orientation, math::Vector3(0.0F, 0.0F, -1.0F));
-        up      = glm::rotate(orientation, math::Vector3(0.0F, 1.0F, 0.0F));
-        left    = glm::normalize(glm::cross(up, forward));
+        forward = orientation * math::Vector3(0.0f, 0.0f, -1.0f);
+        up      = orientation * math::Vector3(0.0F, 1.0F, 0.0F);
+        left    = glm::normalize(-glm::cross(forward, up));
     }
 };
 

@@ -3,6 +3,8 @@ build/**
 .idea/**
 resources/models/**
 resources/textures/**
+resources/materials/**
+resources/sounds/**
 imgui.ini
 myeasylog.log
 compile_commands.json

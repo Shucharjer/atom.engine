@@ -7,10 +7,19 @@ namespace atom::engine::systems::sound {
 
 SoundContext::SoundContext(SoundDevice& device) {}
 
+SoundContext::SoundContext(SoundContext&& that) noexcept
+    : m_Context(std::exchange(that.m_Context, nullptr)) {}
+
+struct SoundContextAttorney {
+    static inline SoundContext create(SoundDevice& dev1ce) {
+        SoundContext context(dev1ce);
+        context.m_Context = alcCreateContext(dev1ce.get(), nullptr);
+        return context;
+    }
+};
+
 SoundContext& SoundContext::instance() noexcept {
-    auto& device = SoundDevice::instance();
-    static SoundContext instance(device);
-    instance.m_Context = alcCreateContext(device.m_Device, nullptr);
+    static SoundContext instance = SoundContextAttorney::create(SoundDevice::instance());
     return instance;
 }
 

@@ -26,7 +26,6 @@ Mesh& Mesh::operator=(Mesh&& that) noexcept {
 }
 
 static inline void TryActiveTexture(
-    hub& hub,
     library<Texture>& library,
     const ShaderProgram& program,
     const Texture& texture,
@@ -39,6 +38,9 @@ static inline void TryActiveTexture(
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, proxy->m_Id);
         program.setInt(textureType, i);
+#ifdef ATOM_OPT_SHOW_TEXTURE_ACTIVE
+        LOG(DEBUG) << "active " << textureType << ": " << i;
+#endif
         ++i;
     }
 }
@@ -51,33 +53,21 @@ void Mesh::draw(const ShaderProgram& program) const noexcept {
         auto& material = materials[0];
         uint16_t i     = 0;
         TryActiveTexture(
-            hub, library, program, material.baseColorTexture, "material.baseColorTexture", i
+            library, program, material.baseColorTexture, "material.baseColorTexture", i
         );
-        TryActiveTexture(
-            hub, library, program, material.ambientTexture, "material.ambientTexture", i
-        );
+        TryActiveTexture(library, program, material.ambientTexture, "material.ambientTexture", i);
 
+        TryActiveTexture(library, program, material.diffuseTexture, "material.diffuseTexture", i);
+        TryActiveTexture(library, program, material.specularTexture, "material.specularTexture", i);
+        TryActiveTexture(library, program, material.emissionTexture, "material.emissionTexture", i);
+        TryActiveTexture(library, program, material.metallicTexture, "material.metallicTexture", i);
         TryActiveTexture(
-            hub, library, program, material.diffuseTexture, "material.diffuseTexture", i
+            library, program, material.roughnessTexture, "material.roughnessTexture", i
         );
         TryActiveTexture(
-            hub, library, program, material.specularTexture, "material.specularTexture", i
+            library, program, material.occlusionTexture, "material.occlusionTexture", i
         );
-        TryActiveTexture(
-            hub, library, program, material.emissionTexture, "material.emissionTexture", i
-        );
-        TryActiveTexture(
-            hub, library, program, material.metallicTexture, "material.metallicTexture", i
-        );
-        TryActiveTexture(
-            hub, library, program, material.roughnessTexture, "material.roughnessTexture", i
-        );
-        TryActiveTexture(
-            hub, library, program, material.occlusionTexture, "material.occlusionTexture", i
-        );
-        TryActiveTexture(
-            hub, library, program, material.normalTexture, "material.normalTexture", i
-        );
+        TryActiveTexture(library, program, material.normalTexture, "material.normalTexture", i);
         program.setVec4("material.baseColorFactor", material.baseColorFactor);
         program.setFloat("material.metallicFactor", material.metallicFactor);
         program.setFloat("material.roughnessFactor", material.roughnessFactor);
@@ -90,7 +80,6 @@ void Mesh::draw(const ShaderProgram& program) const noexcept {
     // glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(indices.size()), GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices.size()));
     vao.unbind();
-    glActiveTexture(0);
 }
 
 } // namespace atom::engine::systems::render

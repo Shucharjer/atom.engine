@@ -8,7 +8,7 @@
 static bool init = false;
 static double lastX;
 static double lastY;
-static double angle_speed                       = 30.0F; // Sensitivity
+static double angle_speed                       = 10.0F; // Sensitivity
 static atom::engine::math::Vector3 currentAngle = { 0.0F, 0.0F, 0.0F };
 
 using namespace atom::engine::math;
@@ -18,6 +18,7 @@ void MouseCallback(GLFWwindow* window) {
     glfwGetCursorPos(window, &x, &y);
 
     if (!gEnableMouseInput) {
+        init = false;
         return;
     }
 
@@ -38,8 +39,6 @@ void MouseCallback(GLFWwindow* window) {
     currentAngle.x = std::clamp(currentAngle.x, -89.0F, 89.0F);
     currentAngle.y = std::fmod(currentAngle.y, 360.0F);
     gCamera->rotationEulerAngle(currentAngle);
-    // gCamera->rotate(offsetY, gCamera->left);
-    // gCamera->rotate(offsetX, gCamera->up);
 
     lastX = x;
     lastY = y;

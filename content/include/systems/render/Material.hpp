@@ -3,6 +3,7 @@
 #include <core/langdef.hpp>
 #include "pchs/graphics.hpp"
 #include "pchs/math.hpp"
+#include "systems/render/ShaderProgram.hpp"
 #include "systems/render/Texture.hpp"
 
 namespace atom::engine::systems::render {
@@ -34,6 +35,8 @@ struct Material {
     Texture normalTexture;
 
     std::string name;
+
+    void apply(ShaderProgram& shaderProgram);
 };
 
 } // namespace atom::engine::systems::render

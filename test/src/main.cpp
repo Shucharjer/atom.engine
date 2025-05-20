@@ -11,6 +11,7 @@
 #include "Local.hpp"
 #include "PhysicsSystem.hpp"
 #include "RenderSystem.hpp"
+#include "SoundSystem.hpp"
 #include "application/KeyboardInput.hpp"
 #include "application/Panel.hpp"
 #include "application/Window.hpp"
@@ -107,7 +108,7 @@ static void updateFrame(command&, queryer&, float deltaTime) {
         lowest  = std::min(lowest, frame);
         total += frame;
         LOG(INFO) << "current fps: " << frame << ", avg: " << (float)total / (float)seconds
-                  << "h: " << highest << "l: " << lowest;
+                  << ", h: " << highest << ", l: " << lowest;
         accumulateTime = 0.0;
         frame          = 0;
     }
@@ -121,7 +122,7 @@ public:
         // pConsole = factory.make<ConsolePanel>();
         // emplace("Console", pConsole);
         auto world = createWorld("main world");
-        world->add_startup(&CreateLocalPlayer);
+        world->add_startup(&CreateLocalPlayer, atom::ecs::early_main_thread);
 
         world->add_startup(StartupTestRenderSystem, atom::ecs::late_main_thread);
         world->add_update(UpdateTestRenderSystem, atom::ecs::late_main_thread);
@@ -129,9 +130,13 @@ public:
 
         world->add_update(updateFrame);
 
-        world->add_startup(StartupTestPhysicsSystem, atom::ecs::late_main_thread);
-        world->add_update(UpdateTestPhysicsSystem, atom::ecs::late_main_thread);
-        world->add_shutdown(ShutdownTestPhysicsSystem, atom::ecs::late_main_thread);
+        world->add_startup(StartupTestPhysicsSystem);
+        world->add_update(UpdateTestPhysicsSystem);
+        world->add_shutdown(ShutdownTestPhysicsSystem);
+
+        world->add_startup(StartupTestSoundSystem, atom::ecs::late_main_thread);
+        world->add_update(UpdateTestSoundSystem, atom::ecs::late_main_thread);
+        world->add_shutdown(ShutdownTestSoundSystem, atom::ecs::late_main_thread);
     }
 
 private:

@@ -14,4 +14,7 @@ template class std::unordered_set<
     std::pmr::polymorphic_allocator<std::uint64_t>>;
 
 template class atom::utils::dense_map<std::uint32_t, void*>;
-template class atom::utils::pmr::dense_map<std::uint32_t, void*>;
+// template class atom::utils::dense_map<
+//     std::uint32_t,
+//     void*,
+//     std::pmr::polymorphic_allocator<std::pair<std::uint32_t, void*>>>;

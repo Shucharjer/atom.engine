@@ -11,6 +11,7 @@ inline atom::ecs::world* gWorld;
 inline float gDeltaTime;
 inline components::Camera* gCamera;
 inline bool gEnableMouseInput = true;
+inline bool gPlayTheSound     = false;
 
 inline void CreateLocalPlayer(atom::ecs::command& command, atom::ecs::queryer& queryer) {
     gLocalPlayer = command.spawn<components::Transform>(components::Transform{});

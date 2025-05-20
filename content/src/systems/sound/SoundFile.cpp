@@ -53,7 +53,7 @@ auto SoundFile::load() const -> std::shared_ptr<proxy_type> {
     auto size        = temp.size();
     sf_count_t count = sf_readf_short(file, temp.data(), temp.size());
     sf_close(file);
-    using Format = SoundBuffer::Format;
+    using Format = SoundFormat;
     proxy->buffer.setData(
         info.channels == 1 ? Format::Stereo8 : Format::Stereo16,
         temp.data(),

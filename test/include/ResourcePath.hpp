@@ -12,12 +12,17 @@ const auto MikuPath        = ModelsFolder.string() + sep + "miku" + sep + "model
 const auto NanosuitPath    = ModelsFolder.string() + sep + "nanosuit" + sep + "nanosuit.obj";
 const auto CubePath        = ModelsFolder.string() + sep + "Cube.fbx";
 const auto IllustriousPath = ModelsFolder.string() + sep + "illustrious" + sep + "illustrious.pmx";
+const auto CatwalkPath     = ModelsFolder.string() + sep + "长廊" + sep + "长廊-配布版.gltf";
 
-const auto ShaderPath               = ResourceFolder / "shaders";
-const auto VertShaderPath           = ShaderPath / "example.vert.glsl";
-const auto FragShaderPath           = ShaderPath / "example.frag.glsl";
-const auto PostprocessShaderPath    = ShaderPath / "post";
+const auto ShaderFolder             = ResourceFolder / "shaders";
+const auto VertShaderPath           = ShaderFolder / "example.vert.glsl";
+const auto FragShaderPath           = ShaderFolder / "example.frag.glsl";
+const auto BlinnPhongPath           = ShaderFolder / "lighting" / "blinnPhong.frag.glsl";
+const auto PostprocessShaderPath    = ShaderFolder / "post";
 const auto SimplyCopyVertShaderPath = PostprocessShaderPath / "copy.vert.glsl";
 const auto SimplyCopyFragShaderPath = PostprocessShaderPath / "copy.frag.glsl";
 const auto InverseFragShaderPath    = PostprocessShaderPath / "inverse.frag.glsl";
 const auto GreyFragShaderPath       = PostprocessShaderPath / "grey.frag.glsl";
+
+const auto TextureFolder = ResourceFolder / "textures";
+const auto SkyboxPath    = TextureFolder / "skybox" / "skybox";

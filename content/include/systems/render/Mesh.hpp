@@ -22,6 +22,7 @@ struct Mesh {
     CullingMode culling = CullingMode::Back;
     VertexArrayObject vao;
     VertexBufferObject vbo;
+    ElementBufferObject ebo;
     atom::vector<Vertex> vertices;
     atom::vector<uint32_t> indices;
     atom::vector<Material> materials;

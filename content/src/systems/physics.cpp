@@ -23,4 +23,4 @@ void UpdatePhysicsSystem(command& command, queryer& queryer, float deltaTime) {
 
 void ShutdownPhysicsSystem(command& command, queryer& queryer) {}
 
-} // namespace systems
+} // namespace atom::engine::systems

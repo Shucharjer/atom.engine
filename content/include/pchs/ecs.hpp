@@ -23,4 +23,7 @@ extern template class std::unordered_set<
     std::pmr::polymorphic_allocator<std::uint64_t>>;
 
 extern template class atom::utils::dense_map<std::uint32_t, void*>;
-extern template class atom::utils::pmr::dense_map<std::uint32_t, void*>;
+// extern template class atom::utils::dense_map<
+//     std::uint32_t,
+//     void*,
+//     std::pmr::polymorphic_allocator<std::pair<std::uint32_t, void*>>>;

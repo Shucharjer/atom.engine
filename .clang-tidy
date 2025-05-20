@@ -4,6 +4,7 @@ Checks: >
     cppcoreguidelines-*,
     -cppcoreguidelines-owning-memory,
     -cppcoreguidelines-pro-type-const-cast,
+    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
     modernize-*,
     -modernize-use-trailing-return-type,
     performance-*,

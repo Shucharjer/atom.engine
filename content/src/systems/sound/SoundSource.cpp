@@ -66,7 +66,7 @@ void SoundSource::setDirection(const math::Vector3& direction) const noexcept {
     alSourcefv(m_Source, AL_ORIENTATION, static_cast<const float*>(temp));
 }
 
-void SoundSource::bufferData(ALint buffer) noexcept {
+void SoundSource::bufferData(ALuint buffer) noexcept {
     if (m_Source) [[likely]] {
         alSourcei(m_Source, AL_BUFFER, buffer);
     }

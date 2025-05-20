@@ -107,6 +107,7 @@ int Window::init() {
     LOG(INFO) << "glsl ver: " << glslVersion;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, kGlfwContextVersionMajor);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, kGlfwContextVersionMinor);
+    glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     LOG(INFO) << "Try creating window";
@@ -177,6 +178,7 @@ int Window::init() {
 
     glfwSetKeyCallback(m_pWindow, &KeyboardInput::Callback);
     glfwSetCursorPosCallback(m_pWindow, &MouseInput::Callback);
+    glfwSetMouseButtonCallback(m_pWindow, &MouseInput::ButtonCallback);
 
     return (LOG(INFO) << "Successfully initialized the basic things of a window"), onInit();
 }

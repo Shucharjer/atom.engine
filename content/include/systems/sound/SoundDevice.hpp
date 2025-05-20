@@ -26,6 +26,8 @@ public:
 
     static SoundDevice& instance() noexcept;
 
+    [[nodiscard]] ALCdevice* get() const noexcept { return m_Device; }
+
 private:
     SoundDevice(const ALchar* deviceName) noexcept;
     ALCdevice* m_Device;

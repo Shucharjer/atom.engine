@@ -5,6 +5,7 @@
 #include <vector>
 #include <command.hpp>
 #include <ecs.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <queryer.hpp>
 #include <ranges/to.hpp>
 #include "KeyboardCallback.hpp"
@@ -16,12 +17,15 @@
 #include "application/Window.hpp"
 #include "pchs/graphics.hpp"
 #include "pchs/math.hpp"
+#include "pchs/stbi.hpp"
 #include "systems/render/BufferObject.hpp"
 #include "systems/render/Camera.hpp"
+#include "systems/render/CubeMap.hpp"
 #include "systems/render/Framebuffer.hpp"
 #include "systems/render/Light.hpp"
 #include "systems/render/Model.hpp"
 #include "systems/render/ShaderProgram.hpp"
+#include "systems/render/Texture.hpp"
 #include "systems/render/Transform.hpp"
 #include "systems/render/Vertex.hpp"
 #include "systems/render/VertexArrayObject.hpp"
@@ -32,15 +36,25 @@ using namespace atom::engine::math;
 using namespace atom::engine::application;
 using namespace atom::engine::systems::render;
 
-static ShaderProgram* gShaderProgram;
-static ShaderProgram* gCopyShaderProgram;
-static ShaderProgram* gInverseShaderProgram;
-static ShaderProgram* gGreyShaderProgram;
-static ColorAttachment* gColorAttachment;
-static Renderbuffer* gRenderbuffer;
-static Framebuffer* gFramebuffer;
-static VertexArrayObject* gScreenVAO;
-static VertexBufferObject* gScreenVBO;
+static ShaderProgram* sShaderProgram;
+static ShaderProgram* sCopyShaderProgram;
+static ShaderProgram* sInverseShaderProgram;
+static ShaderProgram* sGreyShaderProgram;
+static ColorAttachment* sColorAttachment;
+static Renderbuffer* sRenderbuffer;
+static Framebuffer* sFramebuffer;
+static VertexArrayObject* sScreenVAO;
+static VertexBufferObject* sScreenVBO;
+
+static VertexArrayObject* sSphereVAO;
+static VertexBufferObject* sSphereVBO;
+static ElementBufferObject* sSphereEBO;
+static uint32_t sSphereIndicesCount = 0;
+static ShaderProgram* sSphereShaderProgram;
+static Material sSphereMaterial;
+static Material sMetalSphereMaterial;
+
+static void SwitchMouseInput(GLFWwindow* window) { gEnableMouseInput = !gEnableMouseInput; }
 
 const float gScreenVertices[] = {
     // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
@@ -69,8 +83,12 @@ static auto& lib = ::hub.library<Model>();
 static auto& tab = ::hub.table<Model>();
 
 static void ReloadShaderProgram(GLFWwindow*) {
-    delete gShaderProgram;
-    gShaderProgram = new ShaderProgram(VertShaderPath, FragShaderPath);
+    delete sShaderProgram;
+    sShaderProgram = new ShaderProgram(VertShaderPath, BlinnPhongPath);
+    delete sSphereShaderProgram;
+    sSphereShaderProgram = new ShaderProgram(
+        "resources/shaders/renderSphere.vert.glsl", "resources/shaders/renderSphere.frag.glsl"
+    );
 }
 
 static void SwitchPostProcessing(GLFWwindow*) {
@@ -81,12 +99,10 @@ static void SwitchPostProcessing(GLFWwindow*) {
     }
 }
 
-VertexArrayObject* gSphereVAO;
-VertexBufferObject* gSphereVBO;
-ElementBufferObject* gSphereEBO;
-uint32_t indexCount = 0;
-
 static void createSphere() {
+    sSphereShaderProgram = new ShaderProgram(
+        "resources/shaders/renderSphere.vert.glsl", "resources/shaders/renderSphere.frag.glsl"
+    );
 
     constexpr auto segments = 64;
 
@@ -98,13 +114,18 @@ static void createSphere() {
 
     std::pmr::vector<Vert> vertices;
 
-    for (auto i = 0; i < segments; ++i) {
-        for (auto j = 0; j < segments; ++j) {
-            float x    = (float)i / (float)segments;
-            float y    = (float)j / (float)segments;
-            float xPos = std::cos(x * 2.0f * std::numbers::pi) * std::sin(y * std::numbers::pi);
-            float yPos = std::cos(y * std::numbers::pi);
-            float zPos = std::sin(x * 2.0f * std::numbers::pi) * std::sin(y * std::numbers::pi);
+    const auto kTwo = 2.0f;
+    for (auto i = 0; i <= segments; ++i) {
+        for (auto j = 0; j <= segments; ++j) {
+            float x   = (float)i / (float)segments;
+            float y   = (float)j / (float)segments;
+            auto xPos = static_cast<float>(
+                std::cos(x * kTwo * std::numbers::pi) * std::sin(y * std::numbers::pi)
+            );
+            auto yPos = static_cast<float>(std::cos(y * std::numbers::pi));
+            auto zPos = static_cast<float>(
+                std::sin(x * kTwo * std::numbers::pi) * std::sin(y * std::numbers::pi)
+            );
 
             Vert vertex{};
             vertex.position  = { xPos, yPos, zPos };
@@ -115,46 +136,113 @@ static void createSphere() {
     }
 
     std::pmr::vector<uint32_t> indices;
-    for (auto i = 0; i < segments; ++i) {
-        for (auto j = 0; j < segments; ++j) {
-            auto fir = i * (segments + 1) + j;
-            auto sec = fir + segments + 1;
-
-            indices.emplace_back(fir);
-            indices.emplace_back(sec);
-            indices.emplace_back(fir + 1);
+    bool flag = false;
+    for (auto y = 0; y < segments; ++y) {
+        if (!flag) {
+            for (auto x = 0; x <= segments; ++x) {
+                indices.emplace_back(y * (segments + 1) + x);
+                indices.emplace_back((y + 1) * (segments + 1) + x);
+            }
         }
+        else {
+            for (auto x = segments; x >= 0; --x) {
+                indices.emplace_back((y + 1) * (segments + 1) + x);
+                indices.emplace_back(y * (segments + 1) + x);
+            }
+        }
+        flag = !flag;
     }
 
-    gSphereVAO = new VertexArrayObject;
-    gSphereVBO = new VertexBufferObject(vertices.size() * sizeof(float) * 8);
-    gSphereEBO = new ElementBufferObject(indices.size() * sizeof(uint32_t));
-    auto vao   = gSphereVAO->get();
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+    sSphereIndicesCount = indices.size();
+
+    sSphereVAO = new VertexArrayObject;
+    sSphereVBO = new VertexBufferObject(vertices.size() * sizeof(Vert));
+    sSphereEBO = new ElementBufferObject(indices.size() * sizeof(uint32_t));
+    sSphereVAO->bind();
+    sSphereVBO->set(vertices.data());
+    sSphereVBO->bind();
+    sSphereEBO->set(indices.data());
+    sSphereEBO->bind();
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vert), 0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(
-        1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, normal)
-    );
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, normal));
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(
-        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, texCoords)
+        2, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, texCoords)
     );
     glEnableVertexAttribArray(2);
 
-    gSphereVAO->bind();
-    gSphereVBO->set(vertices.data());
+    auto& hub     = hub::instance();
+    auto& library = hub.library<Texture>();
+
+    const std::string matTexFolder   = "resources/materials/wood_planks_grey_4k.gltf/textures/";
+    sSphereMaterial.baseColorTexture = Texture(matTexFolder + "wood_planks_grey_diff_4k.jpg");
+    sSphereMaterial.roughnessTexture = Texture(matTexFolder + "wood_planks_grey_arm_4k.jpg");
+    sSphereMaterial.metallicTexture  = Texture(matTexFolder + "wood_planks_grey_arm_4k.jpg");
+
+    resource_handle handle{};
+    auto baseColorTexture = sSphereMaterial.baseColorTexture.load();
+    handle                = library.install(baseColorTexture);
+    sSphereMaterial.baseColorTexture.set_handle(handle);
+
+    auto roughnessTexture = sSphereMaterial.roughnessTexture.load();
+    handle                = library.install(roughnessTexture);
+    sSphereMaterial.roughnessTexture.set_handle(handle);
+
+    auto metallicTexture = sSphereMaterial.metallicTexture.load();
+    handle               = library.install(metallicTexture);
+    sSphereMaterial.metallicTexture.set_handle(handle);
+
+    const std::string metalMatTexFloder = "resources/materials/blue_metal_plate_4k.gltf/textures/";
+    sMetalSphereMaterial.baseColorTexture =
+        Texture(metalMatTexFloder + "blue_metal_plate_diff_4k.jpg");
+    sMetalSphereMaterial.roughnessTexture =
+        Texture(metalMatTexFloder + "blue_metal_plate_arm_4k.jpg");
+    sMetalSphereMaterial.metallicTexture =
+        Texture(metalMatTexFloder + "blue_metal_plate_arm_4k.jpg");
+
+    baseColorTexture = sMetalSphereMaterial.baseColorTexture.load();
+    handle           = library.install(baseColorTexture);
+    sMetalSphereMaterial.baseColorTexture.set_handle(handle);
+
+    roughnessTexture = sMetalSphereMaterial.roughnessTexture.load();
+    handle           = library.install(roughnessTexture);
+    sMetalSphereMaterial.roughnessTexture.set_handle(handle);
+
+    metallicTexture = sMetalSphereMaterial.metallicTexture.load();
+    handle          = library.install(metallicTexture);
+    sMetalSphereMaterial.metallicTexture.set_handle(handle);
 }
 
 static void renderSphere() {
-    gSphereVAO->bind();
-    glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(
+        GL_TRIANGLE_STRIP, static_cast<GLsizei>(sSphereIndicesCount), GL_UNSIGNED_INT, nullptr
+    );
 }
 
 static void destroySphere() {
-    delete gSphereEBO;
-    delete gSphereVBO;
-    delete gSphereVAO;
+    delete sSphereShaderProgram;
+    delete sSphereEBO;
+    delete sSphereVBO;
+    delete sSphereVAO;
+    auto& hub     = hub::instance();
+    auto& library = hub.library<Texture>();
+    resource_handle handle{};
+    handle = sSphereMaterial.baseColorTexture.get_handle();
+    library.uninstall(handle);
+    handle = sSphereMaterial.roughnessTexture.get_handle();
+    library.uninstall(handle);
+    handle = sSphereMaterial.metallicTexture.get_handle();
+    library.uninstall(handle);
+    handle = sMetalSphereMaterial.baseColorTexture.get_handle();
+    library.uninstall(handle);
+    handle = sMetalSphereMaterial.roughnessTexture.get_handle();
+    library.uninstall(handle);
+    handle = sMetalSphereMaterial.metallicTexture.get_handle();
+    library.uninstall(handle);
 }
+
+static CubeMap* pCubeMap;
 
 void StartupTestRenderSystem(command& command, queryer& queryer) {
 
@@ -192,10 +280,10 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     pointLight2.intensity = 5.0F;
 
     // initialize shader
-    gShaderProgram        = new ShaderProgram(VertShaderPath, FragShaderPath);
-    gCopyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, SimplyCopyFragShaderPath);
-    gInverseShaderProgram = new ShaderProgram(SimplyCopyVertShaderPath, InverseFragShaderPath);
-    gGreyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, GreyFragShaderPath);
+    sShaderProgram        = new ShaderProgram(VertShaderPath, BlinnPhongPath);
+    sCopyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, SimplyCopyFragShaderPath);
+    sInverseShaderProgram = new ShaderProgram(SimplyCopyVertShaderPath, InverseFragShaderPath);
+    sGreyShaderProgram    = new ShaderProgram(SimplyCopyVertShaderPath, GreyFragShaderPath);
 
     // initialize keyboard and mouse input
     auto& keyboard = KeyboardInput::instance();
@@ -215,31 +303,35 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     keyboard.setPressCallback(GLFW_KEY_RIGHT, &RotationRight);
     keyboard.setPressCallback(GLFW_KEY_X, &RotationX);
 
+    keyboard.setPressCallback(GLFW_KEY_ESCAPE, &SwitchMouseInput);
+
     auto& mouse = MouseInput::instance();
     mouse.bind<&MouseCallback>();
 
     // initialize framebuffer
-    gColorAttachment = new ColorAttachment(kDefaultWidth, kDefaultHeight);
-    gRenderbuffer    = new Renderbuffer(kDefaultWidth, kDefaultHeight);
-    gFramebuffer     = new Framebuffer();
-    gFramebuffer->bind();
-    gFramebuffer->attachColorAttachment(*gColorAttachment);
-    gFramebuffer->attachRenderbuffer(*gRenderbuffer);
-    if (auto status = gFramebuffer->getStatus(); status == GL_FRAMEBUFFER_COMPLETE) {
+    sColorAttachment = new ColorAttachment(kDefaultWidth, kDefaultHeight);
+    sRenderbuffer    = new Renderbuffer(kDefaultWidth, kDefaultHeight);
+    sFramebuffer     = new Framebuffer();
+    sFramebuffer->bind();
+    sFramebuffer->attachColorAttachment(*sColorAttachment);
+    sFramebuffer->attachRenderbuffer(*sRenderbuffer);
+    if (auto status = sFramebuffer->getStatus(); status == GL_FRAMEBUFFER_COMPLETE) {
         LOG(DEBUG) << "framebuffer completed";
     }
     else {
         LOG(ERROR) << "framebuffer not completed: " << status;
     }
-    gFramebuffer->unbind();
+    sFramebuffer->unbind();
 
-    gScreenVAO = new VertexArrayObject();
-    gScreenVBO = new VertexBufferObject(sizeof(gScreenVertices));
-    gScreenVBO->set(static_cast<const float*>(gScreenVertices));
-    gScreenVBO->bind();
-    gScreenVAO->addAttributeForVertices2D(0, *gScreenVBO);
+    sScreenVAO = new VertexArrayObject();
+    sScreenVBO = new VertexBufferObject(sizeof(gScreenVertices));
+    sScreenVBO->set(static_cast<const float*>(gScreenVertices));
+    sScreenVBO->bind();
+    sScreenVAO->addAttributeForVertices2D(0, *sScreenVBO);
 
-    // createSphere();
+    createSphere();
+
+    pCubeMap = new CubeMap();
 }
 
 void UpdateTestRenderSystem(
@@ -251,65 +343,106 @@ void UpdateTestRenderSystem(
 
     const auto view = camera.view();
     const auto proj = camera.proj();
-    // gFramebuffer->bind();
+    sFramebuffer->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
-    glEnable(GL_STENCIL_TEST);
-    // glEnable(GL_CULL_FACE);
+    // glEnable(GL_STENCIL_TEST);
+    glEnable(GL_CULL_FACE);
     // glCullFace(GL_BACK);
-    gShaderProgram->use();
-    gShaderProgram->setMat4("view", view);
-    gShaderProgram->setMat4("proj", proj);
-    gShaderProgram->setVec3("viewPos", camera.position);
+    sShaderProgram->use();
+    sShaderProgram->setMat4("view", view);
+    sShaderProgram->setMat4("proj", proj);
+    sShaderProgram->setVec3("viewPos", camera.position);
 
     // apply light of first directional light
     auto lights = queryer.query_any_of<DirectionalLight>();
     if (!lights.empty()) {
         auto& lightComp = queryer.get<DirectionalLight>(lights.front());
-        gShaderProgram->setVec3("dirLight.direction", lightComp.direction);
-        gShaderProgram->setVec4(
-            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
-        );
         // rotation the directional light
         lightComp.rotate(90.0 * gDeltaTime, math::Vector3(0.0F, 1.0F, 0.0F));
+
+        sShaderProgram->setVec3("dirLight.direction", lightComp.direction);
+        sShaderProgram->setVec4(
+            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
+        );
     }
 
     // apply point lights
-    auto pointLights       = queryer.query_any_of<PointLight>();
-    auto pointLightVectors = atom::utils::ranges::to<std::vector>(pointLights);
-    auto pointLightCount   = pointLightVectors.size();
-    std::string tempStr    = "";
-    pointLightCount        = pointLightCount > maxLightCount ? maxLightCount : pointLightCount;
-    gShaderProgram->setInt("pointLightCount", pointLightCount);
-    for (auto i = 0; i < pointLightCount; ++i) {
-        auto light = queryer.get<PointLight>(pointLightVectors[i]);
-        tempStr    = "pointLights[" + std::to_string(i) + "].position";
-        gShaderProgram->setVec3(tempStr, light.position);
-        tempStr = "pointLights[" + std::to_string(i) + "].color";
-        gShaderProgram->setVec3(tempStr, light.color);
-        tempStr = "pointLights[" + std::to_string(i) + "].intensity";
-        gShaderProgram->setFloat(tempStr, light.intensity);
-        tempStr = "pointLights[" + std::to_string(i) + "].constant";
-        gShaderProgram->setFloat(tempStr, light.constant);
-        tempStr = "pointLights[" + std::to_string(i) + "].linearValue";
-        gShaderProgram->setFloat(tempStr, light.linear);
-        tempStr = "pointLights[" + std::to_string(i) + "].quadratic";
-        gShaderProgram->setFloat(tempStr, light.quadratic);
+    auto pointLights = queryer.query_any_of<PointLight>();
+    uint32_t pointLightCount{};
+    std::string tempStr{ magic_32, 0 };
+    for (auto pointLight : pointLights) {
+        auto light = queryer.get<PointLight>(pointLight);
+        tempStr    = "pointLights[" + std::to_string(pointLightCount) + "].position";
+        sShaderProgram->setVec3(tempStr, light.position);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].color";
+        sShaderProgram->setVec3(tempStr, light.color);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].intensity";
+        sShaderProgram->setFloat(tempStr, light.intensity);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].constant";
+        sShaderProgram->setFloat(tempStr, light.constant);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].linearValue";
+        sShaderProgram->setFloat(tempStr, light.linear);
+        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].quadratic";
+        sShaderProgram->setFloat(tempStr, light.quadratic);
+        ++pointLightCount;
     }
+    pointLightCount = pointLightCount > maxLightCount ? maxLightCount : pointLightCount;
+    sShaderProgram->setInt("pointLightCount", pointLightCount);
 
     auto entities = queryer.query_all_of<Model, Transform>();
     for (const auto entity : entities) {
         auto& model            = queryer.get<Model>(entity);
         auto& transform        = queryer.get<Transform>(entity);
         math::Mat4 modelMatrix = transform.toMatrix();
-        gShaderProgram->setMat4("model", modelMatrix);
+        sShaderProgram->setMat4("model", modelMatrix);
         auto handle = model.get_handle();
         auto proxy  = lib.fetch(handle);
-        model.draw(lib, *gShaderProgram);
+        model.draw(lib, *sShaderProgram);
     }
 
-    // renderSphere();
+    sSphereShaderProgram->use();
+    sSphereShaderProgram->setMat4("proj", proj);
+    sSphereShaderProgram->setMat4("view", view);
+    sSphereShaderProgram->setVec3("viewPos", camera.position);
+
+    if (!lights.empty()) {
+        auto& lightComp = queryer.get<DirectionalLight>(lights.front());
+
+        sSphereShaderProgram->setVec3("dirLight.direction", lightComp.direction);
+        sSphereShaderProgram->setVec4(
+            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
+        );
+    }
+
+    sSphereShaderProgram->setInt("pointLightCount", pointLightCount);
+    auto pointLightIndex = 0;
+    for (auto pointLight : pointLights) {
+        auto light = queryer.get<PointLight>(pointLight);
+        tempStr    = "pointLights[" + std::to_string(pointLightIndex) + "].position";
+        sSphereShaderProgram->setVec3(tempStr, light.position);
+        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].color";
+        sSphereShaderProgram->setVec3(tempStr, light.color);
+        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].intensity";
+        sSphereShaderProgram->setFloat(tempStr, light.intensity);
+        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].constant";
+        sSphereShaderProgram->setFloat(tempStr, light.constant);
+        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].linearValue";
+        sSphereShaderProgram->setFloat(tempStr, light.linear);
+        tempStr = "pointLights[" + std::to_string(pointLightIndex) + "].quadratic";
+        sSphereShaderProgram->setFloat(tempStr, light.quadratic);
+    }
+    sSphereVAO->bind();
+    const Mat4 sphereModel = glm::translate(Mat4(1.0), Vector3(0, 8, 10));
+    sSphereShaderProgram->setMat4("model", sphereModel);
+    sSphereMaterial.apply(*sSphereShaderProgram);
+    renderSphere();
+
+    const Mat4 metalSphereModel = glm::translate(Mat4(1.0), Vector3(0, 10, 10));
+    sSphereShaderProgram->setMat4("model", metalSphereModel);
+    sMetalSphereMaterial.apply(*sSphereShaderProgram);
+    renderSphere();
 
     // NOTE: the coordination starts at the left top corner in opengl, but the screen coordnation
     // starts at the left buttom corner. If you want to get a readable picture, you should reverse
@@ -320,26 +453,26 @@ void UpdateTestRenderSystem(
     // stbi_write_png("frame.png", 1280, 960, 4, temp.data(), 0);
 
     // glDisable(GL_BLEND);
-    // gFramebuffer->unbind();
+    sFramebuffer->unbind();
 
-    // gScreenVAO->bind();
-    // glActiveTexture(GL_TEXTURE0);
-    // gColorAttachment->bind();
-    // switch (gPostprocess) {
-    //     using enum Postprocess;
-    // case Inverse: {
-    //     gInverseShaderProgram->use();
-    //     gInverseShaderProgram->setInt("screenTexture", 0);
-    // } break;
-    // case None:
-    // default: {
-    //     gCopyShaderProgram->use();
-    //     gInverseShaderProgram->setInt("screenTexture", 0);
-    // } break;
-    // }
-    // glDisable(GL_DEPTH_TEST);
-    // glDrawArrays(GL_TRIANGLES, 0, 6);
-    // glEnable(GL_DEPTH_TEST);
+    sScreenVAO->bind();
+    glActiveTexture(GL_TEXTURE0);
+    sColorAttachment->bind();
+    switch (gPostprocess) {
+        using enum Postprocess;
+    case Inverse: {
+        sInverseShaderProgram->use();
+        sInverseShaderProgram->setInt("screenTexture", 0);
+    } break;
+    case None:
+    default: {
+        sCopyShaderProgram->use();
+        sInverseShaderProgram->setInt("screenTexture", 0);
+    } break;
+    }
+    glDisable(GL_DEPTH_TEST);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glEnable(GL_DEPTH_TEST);
 }
 
 void ShutdownTestRenderSystem(command& command, queryer& queryer) {
@@ -351,13 +484,13 @@ void ShutdownTestRenderSystem(command& command, queryer& queryer) {
         model.unload();
     }
 
-    delete gShaderProgram;
-    delete gColorAttachment;
-    delete gRenderbuffer;
-    delete gFramebuffer;
-    delete gCopyShaderProgram;
-    delete gInverseShaderProgram;
-    delete gGreyShaderProgram;
+    delete sShaderProgram;
+    delete sColorAttachment;
+    delete sRenderbuffer;
+    delete sFramebuffer;
+    delete sCopyShaderProgram;
+    delete sInverseShaderProgram;
+    delete sGreyShaderProgram;
 
-    // destroySphere();
+    destroySphere();
 }

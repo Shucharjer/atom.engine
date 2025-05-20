@@ -13,7 +13,6 @@
 #include <core/langdef.hpp>
 #include <memory/destroyer.hpp>
 #include <schedule.hpp>
-#include "pchs/graphics.hpp"
 #include "platform/path.hpp"
 #include "systems/render/BufferObject.hpp"
 #include "systems/render/Material.hpp"
@@ -139,15 +138,16 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
             loading_mesh.indices.emplace_back(face.mIndices[j]);
         }
     }
+    // loading_mesh.ebo = ElementBufferObject(loading_mesh.indices.size());
+    // loading_mesh.ebo.set(loading_mesh.indices.data());
 
     if (mesh->mMaterialIndex) [[likely]] {
         Material loading_material;
         auto* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        const std::string& name = material->GetName().data;
-        loading_material.name   = material->GetName().C_Str();
+        loading_material.name = material->GetName().C_Str();
 #ifdef ATOM_SHOW_MATERIAL_LOADING
-        LOG(INFO) << "loading material: [" << name << "]...";
+        LOG(INFO) << "loading material: [" << loading_material.name << "]...";
 #endif
 
         aiColor3D color3d;
@@ -308,8 +308,8 @@ auto Model::load() const -> shared_ptr<Model::Proxy> {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(
         m_Path.c_str(),
-        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_OptimizeMeshes |
-            aiProcess_GenNormals | aiProcess_CalcTangentSpace
+        aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals |
+            aiProcess_CalcTangentSpace // | aiProcess_JoinIdenticalVertices
     );
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {

@@ -4,6 +4,7 @@
 #include "systems/sound/SoundDevice.hpp"
 
 namespace atom::engine::systems::sound {
+struct SoundContextAttorney;
 /**
  * @class SoundContext
  * @brief A basic class for OpenAL context management. You need to create an instance of this class
@@ -12,11 +13,13 @@ namespace atom::engine::systems::sound {
  *
  */
 class SoundContext {
+    friend SoundContextAttorney;
+
 public:
-    SoundContext(const SoundContext&)            = delete;
-    SoundContext(SoundContext&&)                 = delete;
-    SoundContext& operator=(const SoundContext&) = delete;
+    SoundContext(SoundContext&&) noexcept;
     SoundContext& operator=(SoundContext&&)      = delete;
+    SoundContext(const SoundContext&)            = delete;
+    SoundContext& operator=(const SoundContext&) = delete;
     ~SoundContext();
 
     static SoundContext& instance() noexcept;

@@ -106,6 +106,7 @@ target_link_libraries(Engine PUBLIC
 # options
 option(ATOM_OPT_SINGLE_THREAD OFF)
 option(ATOM_OPT_SHOW_MATERIAL_LOADING OFF)
+option(ATOM_OPT_SHOW_TEXTURE_ACTIVE OFF)
 
 if (ATOM_OPT_SINGLE_THREAD)
 add_compile_definitions(ATOM_SINGLE_THREAD)
@@ -113,9 +114,12 @@ endif()
 if (ATOM_OPT_SHOW_MATERIAL_LOADING)
 target_compile_definitions(ATOM_SHOW_MATERIAL_LOADING)
 endif()
+if (ATOM_OPT_SHOW_TEXTURE_ACTIVE)
+target_compile_definitions(ATOM_SHOW_TEXTURE_ACTIVE)
+endif()
 
 add_compile_definitions(AUTO_INITIALIZE_EASYLOGGINGPP ELPP_THREAD_SAFE)
-target_compile_definitions(Engine PUBLIC STB_IMAGE_WRITE_IMPLEMENTATION)
+target_compile_definitions(Engine PRIVATE STB_IMAGE_WRITE_IMPLEMENTATION)
 
 option(ATOM_USE_PRECOMPILE_HEADER OFF)
 

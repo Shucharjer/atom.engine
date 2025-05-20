@@ -1,12 +1,12 @@
-#version 410 core
+#version 410
+
+#define kMaxPointLightCount 15
 
 out vec4 FragColor;
 
 in vec3 FragPos;
 in vec2 TexCoords;
-in vec3 Normal;
-
-#define kMaxPointLightCount 15
+in vec3 ViewPos;
 
 struct Material {
     vec4 baseColorFactor;
@@ -17,10 +17,10 @@ struct Material {
     vec3 ambientLight;
 
     sampler2D baseColorTexture;
-    sampler2D emissionTexture;
-    sampler2D metallicTexture;
-    sampler2D roughnessTexture;
     sampler2D occlusionTexture;
+    sampler2D roughnessTexture;
+    sampler2D metallicTexture;
+    sampler2D emissionTexture;
     sampler2D normalTexture;
 };
 
@@ -40,7 +40,6 @@ struct PointLight {
     float quadratic;
 };
 
-uniform vec3 viewPos;
 uniform Material material;
 uniform DirLight dirLight;
 uniform int pointLightCount;
@@ -104,23 +103,26 @@ vec3 calculatePointLight(PointLight light, vec3 V, vec3 N, float roughness, floa
     float dist = length(light.position - FragPos);
     float attenuation = 1.0 / (light.constant + (light.linearValue + light.quadratic * dist) * dist);
 
-    return calculateLight(V, N, L, H, roughness, metallic, F0, albedo, light.color, light.intensity * attenuation);
+    return calculateLight(V, N, L, H, roughness, metallic, F0, albedo, light.color, light.intensity);
 }
 
 void main() {
-    vec4 albedo = texture(material.baseColorTexture, TexCoords);
+    const float textureScale = 0.1;
+    vec2 uv = FragPos.xz * textureScale;
+
+    vec4 albedo = texture(material.baseColorTexture, uv);
 
     // if (albedo.a < 0.1) discard;
 
-    vec3 emissionColor = texture(material.emissionTexture, TexCoords).rgb;
+    vec3 emissionColor = texture(material.emissionTexture, uv).rgb;
 
-    float roughness = texture(material.roughnessTexture, TexCoords).g;
-    float metallic = texture(material.metallicTexture, TexCoords).b;
+    float roughness = texture(material.roughnessTexture, uv).g;
+    float metallic = texture(material.metallicTexture, uv).b;
 
     vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic);
 
-    vec3 V = normalize(viewPos - FragPos);
-    vec3 N = normalize(Normal);
+    vec3 V = normalize(ViewPos - FragPos);
+    vec3 N = texture(material.normalTexture, uv).rgb;
 
     vec3 Lo = vec3(0.0);
     Lo += calculateDirLight(dirLight, V, N, roughness, metallic, F0, albedo.rgb);
@@ -130,7 +132,10 @@ void main() {
 
     vec3 color = emissionColor + Lo;
 
-    FragColor = vec4(color, albedo.a);
-    // FragColor = vec4(1.0);
-}
+    FragColor = vec4(color, 1.0);
 
+    float dist = distance(FragPos, ViewPos);
+    float fogFactor = exp(-dist * 0.001);
+
+    FragColor = mix(vec4(0.005, 0.005, 0.005, 1), vec4(color, albedo.a), fogFactor);
+}

@@ -46,7 +46,7 @@ struct alignas(magic_16) Camera {
     }
     void rotationEulerAngle(math::Vector3 eluerAngle) noexcept {
         orientation = glm::quat(glm::vec3(
-            glm::radians(eluerAngle[0]), glm::radians(eluerAngle[1]), glm::radians(eluerAngle[2]),
+            glm::radians(eluerAngle.x), glm::radians(eluerAngle.y), glm::radians(eluerAngle.z)
         ));
         updateDirectionVector();
     }

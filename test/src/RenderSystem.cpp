@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdint>
 #include <numbers>
+#include <ranges>
 #include <vector>
 #include <command.hpp>
 #include <ecs.hpp>
@@ -30,6 +31,8 @@
 #include "systems/render/Vertex.hpp"
 #include "systems/render/VertexArrayObject.hpp"
 
+using namespace atom;
+using namespace atom::utils;
 using namespace atom::ecs;
 using namespace atom::engine;
 using namespace atom::engine::math;
@@ -444,28 +447,44 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     pCubeMap = new CubeMap();
 }
 
-void SetPointLights(ShaderProgram& shaderProgram, auto& pointLights, queryer& queryer) {
-    uint32_t pointLightCount{};
-    std::string tempStr{ magic_32, 0 };
-    for (auto pointLight : pointLights) {
-        auto light = queryer.get<PointLight>(pointLight);
-        tempStr    = "pointLights[" + std::to_string(pointLightCount) + "].position";
-        shaderProgram.setVec3(tempStr, light.position);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].color";
-        shaderProgram.setVec3(tempStr, light.color);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].intensity";
-        shaderProgram.setFloat(tempStr, light.intensity);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].constant";
-        shaderProgram.setFloat(tempStr, light.constant);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].linearValue";
-        shaderProgram.setFloat(tempStr, light.linear);
-        tempStr = "pointLights[" + std::to_string(pointLightCount) + "].quadratic";
-        shaderProgram.setFloat(tempStr, light.quadratic);
-        ++pointLightCount;
+template <std::ranges::range Rng>
+requires std::same_as<std::ranges::range_value_t<Rng>, DirectionalLight*> ||
+         std::same_as<std::ranges::range_value_t<Rng>, const DirectionalLight*>
+void ApplyDirLights(ShaderProgram& shaderProgram, const Rng& dirLights) {
+    if (!dirLights.empty()) {
+        auto light = dirLights.front();
+        shaderProgram.setVec3("dirLight.direction", light->direction);
+        shaderProgram.setVec4("dirLight.color", math::Vector4(light->color, light->intensity));
     }
-    pointLightCount = pointLightCount > maxLightCount ? maxLightCount : pointLightCount;
-    shaderProgram.setInt("pointLightCount", pointLightCount);
 }
+
+template <std::ranges::range Rng>
+requires std::same_as<std::ranges::range_value_t<Rng>, PointLight*> ||
+         std::same_as<std::ranges::range_value_t<Rng>, const PointLight*>
+void ApplyPointLights(ShaderProgram& shaderProgram, const Rng& pointLights) {
+    auto count           = pointLights.size();
+    auto pointLightCount = count > maxLightCount ? maxLightCount : count;
+    shaderProgram.setInt("pointLightCount", pointLightCount);
+    const char* prefix = "pointLights[";
+    std::string tempStr(magic_32, 0);
+    for (auto i = 0; i < pointLightCount; ++i) {
+        auto light = pointLights[i];
+        tempStr    = prefix + std::to_string(i) + "].position";
+        shaderProgram.setVec3(tempStr, light->position);
+        tempStr = prefix + std::to_string(i) + "].color";
+        shaderProgram.setVec3(tempStr, light->color);
+        tempStr = prefix + std::to_string(i) + "].intensity";
+        shaderProgram.setFloat(tempStr, light->intensity);
+        tempStr = prefix + std::to_string(i) + "].constant";
+        shaderProgram.setFloat(tempStr, light->constant);
+        tempStr = prefix + std::to_string(i) + "].linearValue";
+        shaderProgram.setFloat(tempStr, light->linear);
+        tempStr = prefix + std::to_string(i) + "].quadratic";
+        shaderProgram.setFloat(tempStr, light->quadratic);
+    }
+}
+
+static void renderScene() {}
 
 void UpdateTestRenderSystem(
     atom::ecs::command& command, atom::ecs::queryer& queryer, float deltaTime
@@ -489,23 +508,27 @@ void UpdateTestRenderSystem(
     sShaderProgram->setVec3("viewPos", camera.position);
 
     // apply light of first directional light
-    auto lights = queryer.query_any_of<DirectionalLight>();
-    if (!lights.empty()) {
-        auto& lightComp = queryer.get<DirectionalLight>(lights.front());
+    auto dirLights = queryer.query_any_of<DirectionalLight>() |
+                     std::views::transform([&queryer](const auto& light) {
+                         return &queryer.get<DirectionalLight>(light);
+                     }) |
+                     ranges::to<std::vector>();
+    {
+        auto light = dirLights.front();
         // rotation the directional light
-        lightComp.rotate(90.0 * gDeltaTime, math::Vector3(0.0F, 1.0F, 0.0F));
-
-        sShaderProgram->setVec3("dirLight.direction", lightComp.direction);
-        sShaderProgram->setVec4(
-            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
-        );
+        light->rotate(90.0 * gDeltaTime, math::Vector3(0.0F, 1.0F, 0.0F));
     }
+    ApplyDirLights(*sShaderProgram, dirLights);
 
     // apply point lights
-    auto pointLights = queryer.query_any_of<PointLight>();
-    SetPointLights(*sShaderProgram, pointLights, queryer);
+    auto pointLights = queryer.query_any_of<PointLight>() |
+                       std::views::transform([&queryer](auto entity) {
+                           return &queryer.get<PointLight>(entity);
+                       }) |
+                       ranges::to<std::vector>();
+    ApplyPointLights(*sShaderProgram, pointLights);
 
-    auto entities = queryer.query_all_of<Model, Transform>();
+    auto entities = queryer.query_all_of<Model, Transform>() | ranges::to<std::vector>();
     for (const auto entity : entities) {
         auto& model            = queryer.get<Model>(entity);
         auto& transform        = queryer.get<Transform>(entity);
@@ -521,16 +544,8 @@ void UpdateTestRenderSystem(
     sSphereShaderProgram->setMat4("view", view);
     sSphereShaderProgram->setVec3("viewPos", camera.position);
 
-    if (!lights.empty()) {
-        auto& lightComp = queryer.get<DirectionalLight>(lights.front());
-
-        sSphereShaderProgram->setVec3("dirLight.direction", lightComp.direction);
-        sSphereShaderProgram->setVec4(
-            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
-        );
-    }
-
-    SetPointLights(*sSphereShaderProgram, pointLights, queryer);
+    ApplyDirLights(*sSphereShaderProgram, dirLights);
+    ApplyPointLights(*sSphereShaderProgram, pointLights);
     sSphereVAO->bind();
     const Mat4 sphereModel = glm::translate(Mat4(1.0), Vector3(0, 8, 10));
     sSphereShaderProgram->setMat4("model", sphereModel);
@@ -555,15 +570,8 @@ void UpdateTestRenderSystem(
     sGroundShaderProgram->setMat4("proj", proj);
     sGroundShaderProgram->setMat4("view", view);
     sGroundShaderProgram->setVec3("viewPos", camera.position);
-    if (!lights.empty()) {
-        auto& lightComp = queryer.get<DirectionalLight>(lights.front());
-
-        sSphereShaderProgram->setVec3("dirLight.direction", lightComp.direction);
-        sSphereShaderProgram->setVec4(
-            "dirLight.color", math::Vector4(lightComp.color, lightComp.intensity)
-        );
-    }
-    SetPointLights(*sGroundShaderProgram, pointLights, queryer);
+    ApplyDirLights(*sGroundShaderProgram, dirLights);
+    ApplyPointLights(*sGroundShaderProgram, pointLights);
     sGroundVAO->bind();
     sGroundMaterial.apply(*sGroundShaderProgram);
     renderGround();

@@ -32,6 +32,8 @@ public:
 
     void bind();
 
+    void unbind();
+
 private:
     GLuint m_Id{};
     GLuint m_Width{};
@@ -64,6 +66,37 @@ public:
     void setSize(GLuint width, GLuint height);
 
     void resize(GLuint width, GLuint height);
+
+private:
+    GLuint m_Id{};
+    GLuint m_Width{};
+    GLuint m_Height{};
+    Framebuffer* m_Buffer{};
+};
+
+class DepthComponent {
+    friend Framebuffer;
+
+public:
+    DepthComponent();
+    DepthComponent(GLuint width, GLuint height);
+    DepthComponent(DepthComponent&&) noexcept;
+    DepthComponent& operator=(DepthComponent&&) noexcept;
+    DepthComponent(const DepthComponent&)            = delete;
+    DepthComponent& operator=(const DepthComponent&) = delete;
+    ~DepthComponent() noexcept;
+
+    [[nodiscard]] operator bool() const noexcept;
+
+    [[nodiscard]] math::Vector2 size() const noexcept;
+
+    void setSize(const GLuint width, const GLuint height);
+
+    void resize(const GLuint width, const GLuint height);
+
+    void bind();
+
+    void unbind();
 
 private:
     GLuint m_Id{};
@@ -125,6 +158,12 @@ public:
      * @warning You should bind this framebuffer before calling this function.
      */
     void attachRenderbuffer(const Renderbuffer& rbo);
+
+    /**
+     * @brief Attach a depth component.
+     * @warning You should bind this framebuffer before calling this function.
+     */
+    void attachDepthComponent(const DepthComponent& attachment);
 
 private:
     GLuint m_Id{};

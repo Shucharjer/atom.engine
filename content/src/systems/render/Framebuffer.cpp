@@ -50,6 +50,8 @@ math::Vector2 ColorAttachment::size() const noexcept { return { m_Width, m_Heigh
 
 void ColorAttachment::setSize(GLuint width, GLuint height) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    m_Width  = width;
+    m_Height = height;
 }
 
 void ColorAttachment::resize(GLuint width, GLuint height) {
@@ -65,6 +67,8 @@ void ColorAttachment::resize(GLuint width, GLuint height) {
 }
 
 void ColorAttachment::bind() { glBindTexture(GL_TEXTURE_2D, m_Id); }
+
+void ColorAttachment::unbind() { glBindTexture(GL_TEXTURE_2D, 0); }
 
 Renderbuffer::Renderbuffer() { glGenRenderbuffers(1, &m_Id); }
 
@@ -117,6 +121,99 @@ void Renderbuffer::resize(GLuint width, GLuint height) {
     }
 }
 
+DepthComponent::DepthComponent() { glGenTextures(1, &m_Id); }
+
+DepthComponent::DepthComponent(const GLuint width, const GLuint height) {
+    glGenTextures(1, &m_Id);
+    glBindTexture(GL_TEXTURE_2D, m_Id);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_DEPTH_COMPONENT,
+        width,
+        height,
+        0,
+        GL_DEPTH_COMPONENT,
+        GL_FLOAT,
+        nullptr
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+}
+
+DepthComponent::DepthComponent(DepthComponent&& that) noexcept
+    : m_Id(std::exchange(that.m_Id, 0)), m_Width(that.m_Width), m_Height(that.m_Height),
+      m_Buffer(std::exchange(that.m_Buffer, nullptr)) {}
+
+DepthComponent& DepthComponent::operator=(DepthComponent&& that) noexcept {
+    if (this != &that) {
+        DepthComponent temp(std::move(that));
+        std::swap(m_Id, temp.m_Id);
+        std::swap(m_Width, temp.m_Width);
+        std::swap(m_Height, temp.m_Height);
+        std::swap(m_Buffer, temp.m_Buffer);
+    }
+    return *this;
+}
+
+DepthComponent::~DepthComponent() noexcept {
+    if (m_Id) [[likely]] {
+        glDeleteTextures(1, &m_Id);
+    }
+}
+
+DepthComponent::operator bool() const noexcept { return m_Id; }
+
+math::Vector2 DepthComponent::size() const noexcept { return { m_Width, m_Height }; }
+
+void DepthComponent::setSize(const GLuint width, const GLuint height) {
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_DEPTH_COMPONENT,
+        width,
+        height,
+        0,
+        GL_DEPTH_COMPONENT,
+        GL_FLOAT,
+        nullptr
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    m_Width  = width;
+    m_Height = height;
+}
+
+void DepthComponent::resize(const GLuint width, const GLuint height) {
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_DEPTH_COMPONENT,
+        width,
+        height,
+        0,
+        GL_DEPTH_COMPONENT,
+        GL_FLOAT,
+        nullptr
+    );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    m_Width  = width;
+    m_Height = height;
+    if (m_Buffer) {
+        auto& attachments = FramebufferAttorney::attachments(m_Buffer);
+        auto index        = attachments.at(m_Id);
+        m_Buffer->bind();
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_COMPONENT, GL_TEXTURE_2D, m_Id, 0);
+    }
+}
+
 Framebuffer::Framebuffer() { glGenFramebuffers(1, &m_Id); }
 
 Framebuffer::Framebuffer(Framebuffer&& that) noexcept : m_Id(std::exchange(that.m_Id, 0)) {}
@@ -158,6 +255,11 @@ void Framebuffer::attachRenderbuffer(const Renderbuffer& rbo) {
     glFramebufferRenderbuffer(
         GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo.m_Id
     );
+}
+
+void Framebuffer::attachDepthComponent(const DepthComponent& attachment) {
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, attachment.m_Id, 0);
+    m_Attachments.emplace(attachment.m_Id, GL_DEPTH_ATTACHMENT);
 }
 
 } // namespace atom::engine::systems::render

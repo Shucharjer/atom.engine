@@ -1,12 +1,13 @@
-#version 460 core
-#define max_point_light 15
-#define max_spot_light 15
+#version 410 core
+
 out vec4 FragColor;
 
 in vec3 FragPos;
 in vec2 TexCoords;
-in mat3 TBN;
 in vec3 Normal;
+in vec4 LightSpaceFragPos;
+
+#define kMaxPointLightCount 15
 
 struct Material {
     vec4 baseColorFactor;
@@ -17,9 +18,6 @@ struct Material {
     vec3 ambientLight;
 
     sampler2D baseColorTexture;
-    sampler2D ambientTexture;
-    sampler2D diffuseTexture;
-    sampler2D specularTexture;
     sampler2D emissionTexture;
     sampler2D metallicTexture;
     sampler2D roughnessTexture;
@@ -47,8 +45,7 @@ uniform vec3 viewPos;
 uniform Material material;
 uniform DirLight dirLight;
 uniform int pointLightCount;
-uniform PointLight pointLights[max_point_light];
-
+uniform PointLight pointLights[kMaxPointLightCount];
 
 const float PI = 3.14159265359;
 
@@ -94,41 +91,52 @@ vec3 calculateLight(vec3 V, vec3 N, vec3 L, vec3 H, float roughness, float metal
     return (diffuse + specular) * radiance * max(dot(N, L), 0.0);
 }
 
-vec3 calculateDirLight(DirLight light, vec3 V, vec3 N, float roughness, metallic, vec3 F0, vec3 albedo) {
+
+vec3 calculateDirLight(DirLight light, vec3 V, vec3 N, float roughness, float metallic, vec3 F0, vec3 albedo) {
     vec3 L = normalize(-light.direction);
     vec3 H = normalize(L + V);
 
-    return calculateLight(V, N, L, H, roughness, metallic, F0, albedo, light.color, 1.0);
+    return calculateLight(V, N, L, H, roughness, metallic, F0, albedo, light.color.rgb, light.color.a);
 }
 
-vec3 calculatePointLight(PointLight light, vec3 V, vec3 N, float roughness, metallic, F0, vec3 albedo) {
-    vec3 L = normalize(FragPos - light.position);
+vec3 calculatePointLight(PointLight light, vec3 V, vec3 N, float roughness, float metallic, vec3 F0, vec3 albedo) {
+    vec3 L = normalize(light.position - FragPos);
     vec3 H = normalize(L + V);
 
-    float intensity = light.intensity;
-    float dist = length(FragPos - light.position);
-    intensity *= 1.0 / (light.constant + (light.linearValue + light.quadratic * dist) * dist);
+    float dist = length(light.position - FragPos);
+    float attenuation = 1.0 / (light.constant + (light.linearValue + light.quadratic * dist) * dist);
 
-    return calculateLight(V, N, L, H, roughness, metallic, F0, albedo, light.color, 1.0);
+    return calculateLight(V, N, L, H, roughness, metallic, F0, albedo, light.color, light.intensity * attenuation);
 }
 
-void main()
-{
-    vec4 albedo = texture(material.diffuseTexture, TexCoords);
+vec4 calculateShadow(vec4 lightSpaceFragPos) {
+
+}
+
+void main() {
+    vec4 albedo = texture(material.baseColorTexture, TexCoords);
 
     // if (albedo.a < 0.1) discard;
 
-    vec3 ambientColor = texture(material.ambientColor, TexCoords).rgb;
-    vec3 specularColor = texture(material.specularTexture, TexCoords).rgb;
-
-    vec3 V = normalize(viewPos - FragPos);
-
     vec3 emissionColor = texture(material.emissionTexture, TexCoords).rgb;
 
-    vec3 color = vec3(0.0);
-    color += calculateDirLight(dirLight, viewDir, Normal);
-    for (int i = 0; i < pointLightCount; i++) {
-        color += calculatePointLight(pointLights[i], FragPos, viewDir, Normal);
+    float roughness = texture(material.roughnessTexture, TexCoords).g;
+    float metallic = texture(material.metallicTexture, TexCoords).b;
+
+    vec3 F0 = mix(vec3(0.04), albedo.rgb, metallic);
+
+    vec3 V = normalize(viewPos - FragPos);
+    vec3 N = normalize(Normal);
+
+    vec3 Lo = vec3(0.0);
+    Lo += calculateDirLight(dirLight, V, N, roughness, metallic, F0, albedo.rgb);
+    for (int i = 0; i < pointLightCount; ++i) {
+        Lo = Lo + calculatePointLight(pointLights[i], V, N, roughness, metallic, F0, albedo.rgb);
     }
+
+    vec3 color = emissionColor + Lo;
+
     FragColor = vec4(color, albedo.a);
+    // FragColor = vec4(1.0);
 }
+

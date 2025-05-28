@@ -24,6 +24,7 @@ void main()
 {
     FragPos = vec3(model * vec4(aPos, 1.0));
     Normal = normalize(vec3(model * vec4(aNormal, 0.0)));
+    TexCoords = aTexCoords;
     gl_Position = proj * view * model * vec4(aPos, 1.0);
     TBN = getTBN();
     gl_Position = proj * view * model * vec4(aPos, 1.0);

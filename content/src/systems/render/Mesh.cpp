@@ -1,4 +1,5 @@
 #include "systems/render/Mesh.hpp"
+#include <format>
 #include <asset.hpp>
 #include "pchs/graphics.hpp"
 
@@ -38,15 +39,14 @@ static inline void TryActiveTexture(
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, proxy->m_Id);
         program.setInt(textureType, i);
-#ifdef ATOM_OPT_SHOW_TEXTURE_ACTIVE
-        LOG(DEBUG) << "active " << textureType << ": " << i;
+#if defined(ATOM_OPT_SHOW_TEXTURE_ACTIVE)
+        LOG(DEBUG) << std::format("active {} at {}: {}", textureType, texture.path(), i);
 #endif
         ++i;
     }
 }
 
 void Mesh::draw(const ShaderProgram& program) const noexcept {
-
     auto& hub     = hub::instance();
     auto& library = hub.library<Texture>();
     if (!materials.empty()) {

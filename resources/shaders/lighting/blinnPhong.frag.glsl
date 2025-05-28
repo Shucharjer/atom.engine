@@ -10,19 +10,14 @@ in vec3 Normal;
 
 struct Material {
     vec4 baseColorFactor;
-    float metallicFactor;
-    float roughnessFactor;
     float ambientFactor;
     vec3 emissiveFactor;
     vec3 ambientLight;
 
-    sampler2D baseColorTexture;
     sampler2D ambientTexture;
     sampler2D diffuseTexture;
     sampler2D specularTexture;
     sampler2D emissionTexture;
-    sampler2D metallicTexture;
-    sampler2D roughnessTexture;
     sampler2D occlusionTexture;
     sampler2D normalTexture;
 };
@@ -68,7 +63,7 @@ vec3 calculateDirLight(DirLight light, vec3 N, vec3 V, vec3 ambient, vec3 diffus
 }
 
 vec3 calculatePointLight(PointLight light, vec3 N, vec3 V, vec3 ambient, vec3 diffuse, vec3 specular, float shininess) {
-    vec3 L = normalize(light.position - FragPos);
+    vec3 L = normalize(FragPos - light.position);
     vec3 H = normalize(L + V);
 
     // vec3 a = ambient * light.kA;
@@ -89,15 +84,18 @@ void main() {
 
     // if (diffuse.a < 0.1) discard;
 
+    vec3 emissionColor = texture(material.emissionTexture, TexCoords).rgb;
+
     vec3 ambient = texture(material.ambientTexture, TexCoords).rgb;
     vec3 specular = texture(material.specularTexture, TexCoords).rgb;
 
     vec3 V = normalize(viewPos - FragPos);
 
-    // vec3 norm = texture(material.normalTexture, TexCoords).rgb;
-    vec3 N = Normal;
+    vec3 norm = texture(material.normalTexture, TexCoords).rgb;
+    vec3 N = normalize(TBN * norm);
+    // vec3 N = Normal;
 
-    vec3 color = vec3(0.0);
+    vec3 color = emissionColor;
     color += calculateDirLight(dirLight, N, V, ambient, diffuse.rgb, specular, 32);
     for (int i = 0; i < pointLightCount; ++i) {
         color += calculatePointLight(pointLights[i], N, V, ambient, diffuse.rgb, specular, 32);

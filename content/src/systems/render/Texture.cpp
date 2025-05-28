@@ -2,6 +2,7 @@
 #include <memory>
 #include <easylogging++.h>
 #include <asset.hpp>
+#include "pchs/logger.hpp"
 #include "glad/glad.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -24,11 +25,11 @@ Texture& Texture::operator=(const Texture& that) {
         return *this;
     }
 
-    if (m_Handle == that.m_Handle) [[unlikely]] {
-        return *this;
-    }
+    // if (m_Handle == that.m_Handle) [[unlikely]] {
+    //     return *this;
+    // }
 
-    reload(m_Handle, m_Path, m_Type);
+    // reload(m_Handle, m_Path, m_Type);
 
     m_Handle = that.m_Handle;
     m_Type   = that.m_Type;
@@ -46,7 +47,7 @@ Texture& Texture::operator=(Texture&& that) noexcept {
         return *this;
     }
 
-    unload();
+    // unload();
 
     m_Handle = std::exchange(that.m_Handle, 0);
     m_Type   = that.m_Type;

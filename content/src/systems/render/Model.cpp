@@ -78,7 +78,7 @@ ATOM_RELEASE_INLINE static void SetTexture(
     const std::string& path,
     const char* textureType
 ) {
-#ifdef ATOM_SHOW_MATERIAL_LOADING
+#if defined(ATOM_SHOW_MATERIAL_LOADING)
     LOG(INFO) << "Setting " << textureType << " at {" << path << "}";
 #endif
     Texture tex(path);
@@ -146,7 +146,7 @@ ATOM_RELEASE_INLINE static Mesh ProcessMesh(
         auto* material = scene->mMaterials[mesh->mMaterialIndex];
 
         loading_material.name = material->GetName().C_Str();
-#ifdef ATOM_SHOW_MATERIAL_LOADING
+#if defined(ATOM_SHOW_MATERIAL_LOADING)
         LOG(INFO) << "loading material: [" << loading_material.name << "]...";
 #endif
 

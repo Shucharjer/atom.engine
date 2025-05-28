@@ -39,6 +39,8 @@ using namespace atom::engine::math;
 using namespace atom::engine::application;
 using namespace atom::engine::systems::render;
 
+inline namespace {
+
 static ShaderProgram* sShaderProgram;
 static ShaderProgram* sCopyShaderProgram;
 static ShaderProgram* sInverseShaderProgram;
@@ -63,7 +65,18 @@ static VertexBufferObject* sGroundVBO;
 static ShaderProgram* sGroundShaderProgram;
 static Material sGroundMaterial;
 
+static GLenum sPolygonMode = GL_FILL;
+
+} // namespace
+
 static void SwitchMouseInput(GLFWwindow* window) { gEnableMouseInput = !gEnableMouseInput; }
+
+static void SwitchPolygonMode(GLFWwindow* window) {
+    ++sPolygonMode;
+    if (sPolygonMode == GL_FILL + 1) {
+        sPolygonMode = GL_POINT;
+    }
+}
 
 const float gScreenVertices[] = {
     // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
@@ -416,6 +429,7 @@ void StartupTestRenderSystem(command& command, queryer& queryer) {
     keyboard.setPressCallback(GLFW_KEY_X, &RotationX);
 
     keyboard.setPressCallback(GLFW_KEY_ESCAPE, &SwitchMouseInput);
+    keyboard.setPressCallback(GLFW_KEY_P, &SwitchPolygonMode);
 
     auto& mouse = MouseInput::instance();
     mouse.bind<&MouseCallback>();
@@ -497,10 +511,11 @@ void UpdateTestRenderSystem(
     const auto proj = camera.proj();
     sFramebuffer->bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    glPolygonMode(GL_FRONT_AND_BACK, sPolygonMode);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
+    // glEnable(GL_BLEND);
     // glEnable(GL_STENCIL_TEST);
-    glEnable(GL_CULL_FACE);
+    // glEnable(GL_CULL_FACE);
     // glCullFace(GL_BACK);
     sShaderProgram->use();
     sShaderProgram->setMat4("view", view);
@@ -585,6 +600,7 @@ void UpdateTestRenderSystem(
     // stbi_write_png("frame.png", 1280, 960, 4, temp.data(), 0);
 
     // glDisable(GL_BLEND);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     sFramebuffer->unbind();
 
     sScreenVAO->bind();
@@ -592,15 +608,19 @@ void UpdateTestRenderSystem(
     sColorAttachment->bind();
     switch (gPostprocess) {
         using enum Postprocess;
-    case Inverse: {
+    case Grey:
+        sGreyShaderProgram->use();
+        sGreyShaderProgram->setInt("screenTexture", 0);
+        break;
+    case Inverse:
         sInverseShaderProgram->use();
         sInverseShaderProgram->setInt("screenTexture", 0);
-    } break;
+        break;
     case None:
-    default: {
+    default:
         sCopyShaderProgram->use();
         sInverseShaderProgram->setInt("screenTexture", 0);
-    } break;
+        break;
     }
     glDisable(GL_DEPTH_TEST);
     glDrawArrays(GL_TRIANGLES, 0, 6);
